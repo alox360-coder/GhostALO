@@ -1,36 +1,109 @@
-name: Compila APK
+name: Inizializza progetto
+
+# Da eseguire UNA volta a mano (Actions -> Inizializza progetto -> Run workflow).
+# Scrive nel repository i file sorgente dell'app e il wrapper di Gradle.
+# Non contiene chiavi: la firma usa i GitHub Secrets.
 
 on:
-  push:
-    branches: [main, master]
   workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  build:
+  init:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
         with:
           gradle-version: '8.7'
 
-      - name: Crea i file del progetto
+      - name: Scrivi i file del progetto
         run: |
+          mkdir -p "$(dirname '.gitignore')"
+          cat > '.gitignore' <<'EOF_PRJ'
+          *.iml
+          .gradle/
+          build/
+          local.properties
+          .idea/
+          .DS_Store
+          captures/
+          .externalNativeBuild/
+          .cxx/
+
+          # Chiavi di firma: mai nel repository
+          *.jks
+          *.keystore
+          signing-secrets*
+          EOF_PRJ
+          mkdir -p "$(dirname 'README.md')"
+          cat > 'README.md' <<'EOF_PRJ'
+          # Controllo Privacy
+
+          App Android in stile terminale (verde su nero) per controllare la privacy del telefono e fare pulizia.
+
+          - **Sicurezza del dispositivo**: punteggio su 100 (blocco schermo, cifratura, aggiornamenti, debug USB, DNS privato, root, accessibilità…).
+          - **Scansione privacy + app spia**: confronta le app installate con l'elenco pubblico di stalkerware noti (nomi di pacchetto e firme) e segnala permessi e servizi a rischio.
+          - **Rilevatore di tracker**: cerca nel codice delle app le librerie pubblicitarie e di tracciamento più note.
+          - **Pulizia**: APK già scaricati, file temporanei, miniature, cartelle vuote, duplicati, cache e app non usate da tempo. Ogni eliminazione richiede conferma.
+
+          ## Privacy
+
+          L'app **non ha il permesso Internet**: non può inviare nulla fuori dal telefono. Non modifica né elimina niente senza la tua conferma.
+
+          ## Limiti
+
+          - Non può leggere i dati di altre app né vedere in tempo reale chi usa fotocamera e microfono.
+          - Non può svuotare cache e cronologia di altre app (Android lo vieta).
+          - Non è un antivirus: confronta app e firme con un elenco noto e cerca indizi. I risultati sono indizi, non prove.
+          - L'elenco di app spia può non essere completo.
+
+          ## Scaricare e verificare
+
+          Gli APK sono nella sezione **Releases**. Ogni release contiene anche `ControlloPrivacy.apk.sha256`:
+          confronta l'impronta SHA-256 del file scaricato con quella indicata. Le release firmate con la chiave del progetto
+          hanno sempre lo stesso certificato; una release marcata "pre-release" è firmata con una chiave di prova.
+
+          ## Compilare
+
+          ```
+          ./gradlew assembleRelease
+          ```
+
+          Senza variabili d'ambiente di firma l'APK è firmato con la chiave di prova di Android. Per firmare con la propria chiave
+          impostare `SIGNING_KEYSTORE_FILE`, `SIGNING_STORE_PASSWORD`, `SIGNING_KEY_ALIAS`, `SIGNING_KEY_PASSWORD`
+          (in GitHub Actions: i quattro secrets omonimi, con il keystore in base64 in `SIGNING_KEYSTORE_B64`).
+
+          Non inserire mai chiavi nel repository.
+
+          ## Crediti e licenza dei dati
+
+          L'elenco di app spia deriva da [stalkerware-indicators](https://github.com/AssoEchap/stalkerware-indicators)
+          di Echap, licenza [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Nessuna garanzia di completezza o accuratezza.
+
+          Se sospetti che un partner o un familiare violento ti controlli il telefono, rimuovere un'app spia potrebbe avvisarlo:
+          valuta prima di contattare un centro antiviolenza (in Italia: 1522, gratuito e attivo 24 ore su 24).
+          EOF_PRJ
           mkdir -p "$(dirname 'app/build.gradle.kts')"
           cat > 'app/build.gradle.kts' <<'EOF_PRJ'
           plugins {
               id("com.android.application")
               id("org.jetbrains.kotlin.android")
           }
+
+          // La chiave di firma NON è nel repository: arriva da variabili d'ambiente
+          // (GitHub Secrets in CI). Senza chiave, la build usa la chiave di prova di Android.
+          val keystorePath: String? = System.getenv("SIGNING_KEYSTORE_FILE")
+          val hasReleaseKey: Boolean = keystorePath != null && File(keystorePath).exists()
 
           android {
               namespace = "it.privacycheck"
@@ -40,24 +113,32 @@ jobs:
                   applicationId = "it.privacycheck"
                   minSdk = 30
                   targetSdk = 34
-                  versionCode = 3
-                  versionName = "3.0"
+                  // Il numero di build di GitHub garantisce versionCode sempre crescente.
+                  versionCode = 100 + (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0)
+                  versionName = "3.1"
               }
 
-              // Chiave di firma fissa: gli aggiornamenti si installano sopra la versione precedente.
               signingConfigs {
-                  create("fixed") {
-                      storeFile = file("fixed.jks")
-                      storePassword = "privacycheck"
-                      keyAlias = "key"
-                      keyPassword = "privacycheck"
+                  if (hasReleaseKey) {
+                      create("release") {
+                          storeFile = File(keystorePath!!)
+                          storePassword = System.getenv("SIGNING_STORE_PASSWORD")
+                          keyAlias = System.getenv("SIGNING_KEY_ALIAS")
+                          keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
+                      }
                   }
               }
 
               buildTypes {
-                  getByName("debug") {
-                      signingConfig = signingConfigs.getByName("fixed")
+                  getByName("release") {
+                      isMinifyEnabled = false
+                      signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
                   }
+              }
+
+              lint {
+                  abortOnError = false
+                  checkReleaseBuilds = false
               }
 
               compileOptions {
@@ -69,54 +150,6 @@ jobs:
                   jvmTarget = "17"
               }
           }
-          EOF_PRJ
-          mkdir -p "$(dirname 'app/fixed.jks')"
-          base64 -d > 'app/fixed.jks' <<'EOF_PRJ'
-          MIIJ/gIBAzCCCagGCSqGSIb3DQEHAaCCCZkEggmVMIIJkTCCBagGCSqGSIb3DQEHAaCCBZkEggWV
-          MIIFkTCCBY0GCyqGSIb3DQEMCgECoIIFQDCCBTwwZgYJKoZIhvcNAQUNMFkwOAYJKoZIhvcNAQUM
-          MCsEFCKuehXZc4yDcDTPJsoW+RnCxSV3AgInEAIBIDAMBggqhkiG9w0CCQUAMB0GCWCGSAFlAwQB
-          KgQQuuorFWyFoJ50R6GgxxO1qQSCBNACVcgmj/XqjJKdoc4FBfHAnjTrwu4XwOTOf39VuxloIkQb
-          jfKsyI6Lrmy9KoayDH+Jlsq5s8/KDQRQZMwWpbCBthz990Ba7bnN+km6DfEY/kcJ+1vU9u1h6Vn8
-          tgtFKHzV0nPXfXvtqrfL9V1UAWAvYUGYQsxaHZgq/bSgL2P43CwvBqBV9u+j4eEe6sOvwp3NC8hw
-          lrfFZPtXyUsKQDBEktgkxBENCI2VT3oKhNIwSxh7wBajQLkdKsUgPKiqgddTJoPDazp47FBb9xsc
-          QJya8vG0thNZjcT2Z2Io45qzZRbuo0aeZfS/meYmOCMR6fd53uh+Oku//4LYnzVouqWgy9Hf2IdE
-          jHnvPh0ObUwsXwmso+dDOgZsOlj+aidBE4aEkBLUqHhWXNCOZ9rk8QzMAbw/WgDkx7XVawYYVXoW
-          9ntcZxv35EdgWIEJUiHZHcbTRFdyjqbQEyp3kw8r8vVnEV5uTNwHvYDki/qwHec26TAnCqcWB7V2
-          eNQ9HwWXev4PY5b35150JcmFG5B7q1vmT5UJHTQ6nF5pVlkc38vybmI4kttvnTGGNPHZ2iLivMhq
-          BVLQ9jUoX/6dMTPd/dJYPZdtiVReaIJwQl5SaE3JMF51MSVp+8cEurYF/MbflMXyJEDz5WfGBbjv
-          jrkswCG5KmNbPx20ObPbQqogzP+CMWtKIdujtD1DnmaRuC2TKfNxPHQ4KvbMl2q8VWwQ25qKHrkQ
-          Dx4DUXjBU6JFLoJhEOG8V/HSV4GreQbKCrCMvqgvpBDiIU4xYyEIRRQvrGArT5bv36sQbk7geMDt
-          335hfZUO+2LTnJFzyW9YciUJSWd9ypyougIW+VHpgZndNP7B8mhgnqICjtS/FdQ0rl1Mt2lHVkLC
-          9b9Pb+rbZsVzRJkk4rTcb4iV7BQ4dm7pSN8Ee7UE23zOvBPF8Zs6JwMzI4TH1dJqww2H9AD3bCHC
-          24EGwgi7y+dJYN4HJKHlEm6laHUrpuS7FzpdN1u0ZYJW9FvWEhbPF+Pzl+1CkVyT6ArL/TuDtLee
-          GnOVFyefRoB9ewNU2Emwi/V9C7UGIivOY/1aCRoPF0UYbPeL05GBhaMhk/HlfV+6eBO9ZXSPodsz
-          nfQA5r3VxvU5cvLi2+k4zgtsZ6hu7dFXmYFs031QbB54rPCQPEdZ8ysQuTF3ihCGaZLbx+hCwsVG
-          R+RPtMBVi1/Khgd0IxBbc3JDwi0qpOMXtgQ2FfaWc7BohSpG11ixlMt7oClMa2Y5TO6EmtxCpPhg
-          g+lfdnqdUDa8JBqKXedBbkCrkLHyazYCId/XXu02evkCHWQsgUg4JbVufajxMNndEqNdO3pk9Nm2
-          vE9nvWo0kYuIvEWRQAuZdBTIZ7SBrK/pqJoW/0OS4Xll41tzaPITM1psz6LBWGPqtEivURZmcPXS
-          md7ntP3MCWm8o78Xb6Lorip8bfIY9y9yg2u0LzN6u50Th6CzkM7qVeeub6jNWVm5kyXDs5y5uOxS
-          w622MU7i1lN6gcimLusnxWYjnE/sE1rOGa6CQw/MdQ4uySmp9d/xffaUZua1BFb/MYcBXrqIzN5V
-          bR59vzVI2V0k21+xxv89JGtj9Nhw47ovgGb2Dr+0cKLHWgCoDOr97BCNUybxF15A3PoOfpM/s739
-          zjE6MBUGCSqGSIb3DQEJFDEIHgYAawBlAHkwIQYJKoZIhvcNAQkVMRQEElRpbWUgMTc5MzM4Njk0
-          NTk3NTCCA+EGCSqGSIb3DQEHBqCCA9IwggPOAgEAMIIDxwYJKoZIhvcNAQcBMGYGCSqGSIb3DQEF
-          DTBZMDgGCSqGSIb3DQEFDDArBBRk6MJLvt8Y3omHqYo/k3i4ukarVgICJxACASAwDAYIKoZIhvcN
-          AgkFADAdBglghkgBZQMEASoEEPcBrC8XivyP+3K1YDhlTGKAggNQLf4/eC7IJ4lQa93LIMKTBxrP
-          s2ELyIcQ7nvZZjTlHE2lb7hjcvuShGV1WI3oegeZ+93rhpxfFE/XFdg/FxPKtZKmPSaoGOFmddtE
-          RWdOJb3OqXbWgj2omDlkC7lja+Oo0Isy2GZcQikJ8ymmukQNEcTyx+VfNb7Pok51dDHf7/Ihfw/O
-          15tUUzZp+UB9KQ0sLTuK01lJvp5+/rjnVy4IBe8kS1TkMvrkahI8aGFf7lCIsYcag5fjjJJAcXmg
-          hHf4RUOS/jgaD7Io0hhpJ1b5e650lQl0jrU/9vL5aGPNbZ5pKwdgu1vkORlvv5F78YekRAPRST/s
-          3g4uBNvW55EedXjnm3DfFHpuQszqmQt0/gXLxHcvJkV/glJYu3ajrpsvXWj1h4mNwootj8gzBIWR
-          i8WPzz8f6of2JlDOAYSXRXkWL4lHHKqEhIpGG08sGy4IFaIicOm7h3O6ieeeW3jkgV/0hOuTbItn
-          WV/dqfasXiK1MBEA2qHkFPTWvgrXdjFQ1DVXChGclTBXqHmEywGhm9YSJH+y5XGrzpBQa8QvQfci
-          KCJMsnFFEslYSiVN5awQel2Rasv/uJEjzn0PiCMGsPwDGln9meWPE6VFLOgs4STEslZAInR+CnID
-          2SD5AdO6wI1PUa8ge9ADtC6tuMnQtvZlI3M+N/wdWjqWdPuEcpuZGgdWSVRUT+/ZDhh/rtUwGD//
-          AJ0ipe9p+hrpZqNkaFQ59YMwl7uYKwGojiYEAfWjWwGoPDlByUt1pN5GfQnluXyIZ7zqCNE3SqD8
-          hY+uzCoNU7saElJe/GGSSiOFNLjLJmPHJ608EbedVjfOvatJRSF1x40hgaN+bTDK9LK9N8WmwafX
-          ZzuBSgl/vqeUxjLsbTREYO3elaRTEwO2IxpCQCQDxGbyqMzpDISwsD4Cd5MNgxtxB4su1Gmmn4Kw
-          NpZjXWaAXo6k/EvEBPm5zVb30BV66bIBY6Gc73G9+9jJjruDN+xqCJ30YtoSZcrSFhut3NIsAVTV
-          WHBuiW8ZGLXYqqjr400jiuiXzHmqo4jR4YGPEj9ABd9JoB05x+gG9IOh8WWLzEYaGMuaVWC44qse
-          P1ana5lryrnGvnGzPYOMqRDEjBpnElu2Di3cZ2ksIlQwTTAxMA0GCWCGSAFlAwQCAQUABCD212JW
-          H6mpXwV/3sLfHCBQUauCsPiYL7jwbKBkx1jtzQQUXNHNfzDHr1UZnDQDVvOO026KKaUCAicQ
           EOF_PRJ
           mkdir -p "$(dirname 'app/src/main/AndroidManifest.xml')"
           cat > 'app/src/main/AndroidManifest.xml' <<'EOF_PRJ'
@@ -1705,7 +1738,7 @@ jobs:
                   screen = "intro"
                   box.removeAllViews()
                   text("> CONTROLLO_PRIVACY_", size = 26f, color = green, bold = true, pad = 4)
-                  text("Versione 3.0", size = 12f, color = grey, pad = 1)
+                  text("Versione 3.1", size = 12f, color = grey, pad = 1)
                   text("Nessun accesso a Internet: i dati restano nel telefono.", size = 12f, color = grey, pad = 1)
                   sep()
                   button("[1] Sicurezza del dispositivo") { showSecurity() }
@@ -3101,18 +3134,97 @@ jobs:
           rootProject.name = "ControlloPrivacy"
           include(":app")
           EOF_PRJ
+          mkdir -p "$(dirname 'tools/update_stalkerware.py')"
+          cat > 'tools/update_stalkerware.py' <<'EOF_PRJ'
+          #!/usr/bin/env python3
+          """Aggiorna app/src/main/assets/stalkerware.txt dall'elenco pubblico di Echap.
 
-      - name: Compila
-        run: gradle assembleDebug --no-daemon --stacktrace
+          Fonte: https://github.com/AssoEchap/stalkerware-indicators (licenza CC-BY 4.0).
 
-      - name: Pubblica l'APK
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: apk-${{ github.run_number }}
-          name: Controllo Privacy v3.0 (build ${{ github.run_number }})
-          files: app/build/outputs/apk/debug/app-debug.apk
+          Uso:
+              python3 tools/update_stalkerware.py            # scarica l'ultima versione
+              python3 tools/update_stalkerware.py --file ioc.yaml   # usa un file locale
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ControlloPrivacy-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          Misure di sicurezza: legge solo dati (nessun codice viene eseguito), accetta solo
+          nomi di pacchetto e impronte SHA-1 con formato valido e, se l'elenco ricevuto
+          sembra anomalo (troppo piccolo), lascia intatta la copia esistente.
+          """
+          import datetime
+          import re
+          import subprocess
+          import sys
+          import urllib.request
+
+          URL = "https://raw.githubusercontent.com/AssoEchap/stalkerware-indicators/master/ioc.yaml"
+          OUT = "app/src/main/assets/stalkerware.txt"
+          MIN_PACKAGES = 300
+          MIN_CERTS = 200
+
+          PKG_RE = re.compile(r"^[A-Za-z0-9_.\-]{1,200}$")
+          CERT_RE = re.compile(r"^[0-9A-F]{40}$")
+
+
+          def load_yaml():
+              try:
+                  import yaml
+              except ImportError:
+                  subprocess.check_call([sys.executable, "-m", "pip", "install", "--quiet", "pyyaml"])
+                  import yaml
+              if len(sys.argv) >= 3 and sys.argv[1] == "--file":
+                  with open(sys.argv[2], encoding="utf-8") as f:
+                      return yaml.safe_load(f)
+              with urllib.request.urlopen(URL, timeout=60) as r:
+                  return yaml.safe_load(r.read().decode("utf-8"))
+
+
+          def main():
+              data = load_yaml()
+              packages, certs = set(), set()
+              for entry in data:
+                  for p in entry.get("packages") or []:
+                      p = str(p).strip()
+                      if PKG_RE.match(p):
+                          packages.add(p)
+                  for c in entry.get("certificates") or []:
+                      c = str(c).strip().upper()
+                      if CERT_RE.match(c):
+                          certs.add(c)
+
+              if len(packages) < MIN_PACKAGES or len(certs) < MIN_CERTS:
+                  print("Elenco ricevuto troppo piccolo (%d pacchetti, %d firme): mantengo quello esistente."
+                        % (len(packages), len(certs)))
+                  return 0
+
+              with open(OUT, "w", encoding="utf-8") as f:
+                  f.write("# Fonte: AssoEchap/stalkerware-indicators (ioc.yaml), CC-BY 4.0\n")
+                  f.write("# Aggiornato il %s\n" % datetime.date.today().isoformat())
+                  for p in sorted(packages):
+                      f.write("P:%s\n" % p)
+                  for c in sorted(certs):
+                      f.write("C:%s\n" % c)
+              print("Aggiornato: %d pacchetti, %d firme." % (len(packages), len(certs)))
+              return 0
+
+
+          if __name__ == "__main__":
+              sys.exit(main())
+          EOF_PRJ
+
+      - name: Crea il wrapper di Gradle
+        run: |
+          mkdir -p "$RUNNER_TEMP/w"
+          touch "$RUNNER_TEMP/w/settings.gradle"
+          (cd "$RUNNER_TEMP/w" && gradle wrapper --distribution-type bin --no-daemon)
+          cp "$RUNNER_TEMP/w/gradlew" "$RUNNER_TEMP/w/gradlew.bat" .
+          mkdir -p gradle/wrapper
+          cp "$RUNNER_TEMP/w/gradle/wrapper/"* gradle/wrapper/
+          chmod +x gradlew
+
+      - name: Salva nel repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git update-index --chmod=+x gradlew
+          git commit -m "Inizializza il progetto Controllo Privacy" || echo "Nessuna modifica da salvare"
+          git push
