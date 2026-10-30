@@ -1,0 +1,3118 @@
+name: Compila APK
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Crea i file del progetto
+        run: |
+          mkdir -p "$(dirname 'app/build.gradle.kts')"
+          cat > 'app/build.gradle.kts' <<'EOF_PRJ'
+          plugins {
+              id("com.android.application")
+              id("org.jetbrains.kotlin.android")
+          }
+
+          android {
+              namespace = "it.privacycheck"
+              compileSdk = 34
+
+              defaultConfig {
+                  applicationId = "it.privacycheck"
+                  minSdk = 30
+                  targetSdk = 34
+                  versionCode = 3
+                  versionName = "3.0"
+              }
+
+              // Chiave di firma fissa: gli aggiornamenti si installano sopra la versione precedente.
+              signingConfigs {
+                  create("fixed") {
+                      storeFile = file("fixed.jks")
+                      storePassword = "privacycheck"
+                      keyAlias = "key"
+                      keyPassword = "privacycheck"
+                  }
+              }
+
+              buildTypes {
+                  getByName("debug") {
+                      signingConfig = signingConfigs.getByName("fixed")
+                  }
+              }
+
+              compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }
+
+              kotlinOptions {
+                  jvmTarget = "17"
+              }
+          }
+          EOF_PRJ
+          mkdir -p "$(dirname 'app/fixed.jks')"
+          base64 -d > 'app/fixed.jks' <<'EOF_PRJ'
+          MIIJ/gIBAzCCCagGCSqGSIb3DQEHAaCCCZkEggmVMIIJkTCCBagGCSqGSIb3DQEHAaCCBZkEggWV
+          MIIFkTCCBY0GCyqGSIb3DQEMCgECoIIFQDCCBTwwZgYJKoZIhvcNAQUNMFkwOAYJKoZIhvcNAQUM
+          MCsEFCKuehXZc4yDcDTPJsoW+RnCxSV3AgInEAIBIDAMBggqhkiG9w0CCQUAMB0GCWCGSAFlAwQB
+          KgQQuuorFWyFoJ50R6GgxxO1qQSCBNACVcgmj/XqjJKdoc4FBfHAnjTrwu4XwOTOf39VuxloIkQb
+          jfKsyI6Lrmy9KoayDH+Jlsq5s8/KDQRQZMwWpbCBthz990Ba7bnN+km6DfEY/kcJ+1vU9u1h6Vn8
+          tgtFKHzV0nPXfXvtqrfL9V1UAWAvYUGYQsxaHZgq/bSgL2P43CwvBqBV9u+j4eEe6sOvwp3NC8hw
+          lrfFZPtXyUsKQDBEktgkxBENCI2VT3oKhNIwSxh7wBajQLkdKsUgPKiqgddTJoPDazp47FBb9xsc
+          QJya8vG0thNZjcT2Z2Io45qzZRbuo0aeZfS/meYmOCMR6fd53uh+Oku//4LYnzVouqWgy9Hf2IdE
+          jHnvPh0ObUwsXwmso+dDOgZsOlj+aidBE4aEkBLUqHhWXNCOZ9rk8QzMAbw/WgDkx7XVawYYVXoW
+          9ntcZxv35EdgWIEJUiHZHcbTRFdyjqbQEyp3kw8r8vVnEV5uTNwHvYDki/qwHec26TAnCqcWB7V2
+          eNQ9HwWXev4PY5b35150JcmFG5B7q1vmT5UJHTQ6nF5pVlkc38vybmI4kttvnTGGNPHZ2iLivMhq
+          BVLQ9jUoX/6dMTPd/dJYPZdtiVReaIJwQl5SaE3JMF51MSVp+8cEurYF/MbflMXyJEDz5WfGBbjv
+          jrkswCG5KmNbPx20ObPbQqogzP+CMWtKIdujtD1DnmaRuC2TKfNxPHQ4KvbMl2q8VWwQ25qKHrkQ
+          Dx4DUXjBU6JFLoJhEOG8V/HSV4GreQbKCrCMvqgvpBDiIU4xYyEIRRQvrGArT5bv36sQbk7geMDt
+          335hfZUO+2LTnJFzyW9YciUJSWd9ypyougIW+VHpgZndNP7B8mhgnqICjtS/FdQ0rl1Mt2lHVkLC
+          9b9Pb+rbZsVzRJkk4rTcb4iV7BQ4dm7pSN8Ee7UE23zOvBPF8Zs6JwMzI4TH1dJqww2H9AD3bCHC
+          24EGwgi7y+dJYN4HJKHlEm6laHUrpuS7FzpdN1u0ZYJW9FvWEhbPF+Pzl+1CkVyT6ArL/TuDtLee
+          GnOVFyefRoB9ewNU2Emwi/V9C7UGIivOY/1aCRoPF0UYbPeL05GBhaMhk/HlfV+6eBO9ZXSPodsz
+          nfQA5r3VxvU5cvLi2+k4zgtsZ6hu7dFXmYFs031QbB54rPCQPEdZ8ysQuTF3ihCGaZLbx+hCwsVG
+          R+RPtMBVi1/Khgd0IxBbc3JDwi0qpOMXtgQ2FfaWc7BohSpG11ixlMt7oClMa2Y5TO6EmtxCpPhg
+          g+lfdnqdUDa8JBqKXedBbkCrkLHyazYCId/XXu02evkCHWQsgUg4JbVufajxMNndEqNdO3pk9Nm2
+          vE9nvWo0kYuIvEWRQAuZdBTIZ7SBrK/pqJoW/0OS4Xll41tzaPITM1psz6LBWGPqtEivURZmcPXS
+          md7ntP3MCWm8o78Xb6Lorip8bfIY9y9yg2u0LzN6u50Th6CzkM7qVeeub6jNWVm5kyXDs5y5uOxS
+          w622MU7i1lN6gcimLusnxWYjnE/sE1rOGa6CQw/MdQ4uySmp9d/xffaUZua1BFb/MYcBXrqIzN5V
+          bR59vzVI2V0k21+xxv89JGtj9Nhw47ovgGb2Dr+0cKLHWgCoDOr97BCNUybxF15A3PoOfpM/s739
+          zjE6MBUGCSqGSIb3DQEJFDEIHgYAawBlAHkwIQYJKoZIhvcNAQkVMRQEElRpbWUgMTc5MzM4Njk0
+          NTk3NTCCA+EGCSqGSIb3DQEHBqCCA9IwggPOAgEAMIIDxwYJKoZIhvcNAQcBMGYGCSqGSIb3DQEF
+          DTBZMDgGCSqGSIb3DQEFDDArBBRk6MJLvt8Y3omHqYo/k3i4ukarVgICJxACASAwDAYIKoZIhvcN
+          AgkFADAdBglghkgBZQMEASoEEPcBrC8XivyP+3K1YDhlTGKAggNQLf4/eC7IJ4lQa93LIMKTBxrP
+          s2ELyIcQ7nvZZjTlHE2lb7hjcvuShGV1WI3oegeZ+93rhpxfFE/XFdg/FxPKtZKmPSaoGOFmddtE
+          RWdOJb3OqXbWgj2omDlkC7lja+Oo0Isy2GZcQikJ8ymmukQNEcTyx+VfNb7Pok51dDHf7/Ihfw/O
+          15tUUzZp+UB9KQ0sLTuK01lJvp5+/rjnVy4IBe8kS1TkMvrkahI8aGFf7lCIsYcag5fjjJJAcXmg
+          hHf4RUOS/jgaD7Io0hhpJ1b5e650lQl0jrU/9vL5aGPNbZ5pKwdgu1vkORlvv5F78YekRAPRST/s
+          3g4uBNvW55EedXjnm3DfFHpuQszqmQt0/gXLxHcvJkV/glJYu3ajrpsvXWj1h4mNwootj8gzBIWR
+          i8WPzz8f6of2JlDOAYSXRXkWL4lHHKqEhIpGG08sGy4IFaIicOm7h3O6ieeeW3jkgV/0hOuTbItn
+          WV/dqfasXiK1MBEA2qHkFPTWvgrXdjFQ1DVXChGclTBXqHmEywGhm9YSJH+y5XGrzpBQa8QvQfci
+          KCJMsnFFEslYSiVN5awQel2Rasv/uJEjzn0PiCMGsPwDGln9meWPE6VFLOgs4STEslZAInR+CnID
+          2SD5AdO6wI1PUa8ge9ADtC6tuMnQtvZlI3M+N/wdWjqWdPuEcpuZGgdWSVRUT+/ZDhh/rtUwGD//
+          AJ0ipe9p+hrpZqNkaFQ59YMwl7uYKwGojiYEAfWjWwGoPDlByUt1pN5GfQnluXyIZ7zqCNE3SqD8
+          hY+uzCoNU7saElJe/GGSSiOFNLjLJmPHJ608EbedVjfOvatJRSF1x40hgaN+bTDK9LK9N8WmwafX
+          ZzuBSgl/vqeUxjLsbTREYO3elaRTEwO2IxpCQCQDxGbyqMzpDISwsD4Cd5MNgxtxB4su1Gmmn4Kw
+          NpZjXWaAXo6k/EvEBPm5zVb30BV66bIBY6Gc73G9+9jJjruDN+xqCJ30YtoSZcrSFhut3NIsAVTV
+          WHBuiW8ZGLXYqqjr400jiuiXzHmqo4jR4YGPEj9ABd9JoB05x+gG9IOh8WWLzEYaGMuaVWC44qse
+          P1ana5lryrnGvnGzPYOMqRDEjBpnElu2Di3cZ2ksIlQwTTAxMA0GCWCGSAFlAwQCAQUABCD212JW
+          H6mpXwV/3sLfHCBQUauCsPiYL7jwbKBkx1jtzQQUXNHNfzDHr1UZnDQDVvOO026KKaUCAicQ
+          EOF_PRJ
+          mkdir -p "$(dirname 'app/src/main/AndroidManifest.xml')"
+          cat > 'app/src/main/AndroidManifest.xml' <<'EOF_PRJ'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+              <!-- Nessun permesso INTERNET: i dati non lasciano mai il telefono. -->
+              <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+              <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+              <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+              <uses-permission
+                  android:name="android.permission.READ_EXTERNAL_STORAGE"
+                  android:maxSdkVersion="32" />
+              <!-- Pulizia: accesso a tutti i file (concesso dall'utente nelle impostazioni) -->
+              <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+              <!-- Cache e app non usate: statistiche di utilizzo (concesse dall'utente) -->
+              <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
+
+              <application
+                  android:allowBackup="false"
+                  android:icon="@mipmap/ic_launcher"
+                  android:label="Controllo Privacy"
+                  android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
+
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF_PRJ
+          mkdir -p "$(dirname 'app/src/main/assets/stalkerware.txt')"
+          cat > 'app/src/main/assets/stalkerware.txt' <<'EOF_PRJ'
+          # Fonte: AssoEchap/stalkerware-indicators (ioc.yaml), snapshot 2026-10-30
+          P:Aktualizacja.apps
+          P:YWZiZDFjZTg2NTZlOGI4NDkyYWJjZDJjZDE5ZTM0Mjk.MzkwMmNhZGFiZGZhMjMyZjQzNTJkYmQ1ODg1ZjI1NzA
+          P:a.tck.lvmchi
+          P:afs.hbmoczc
+          P:ahmyth.mine.king.ahmyth
+          P:and.GuardTrial
+          P:and.LocatorTrial
+          P:android.helper.system
+          P:android.sys.process
+          P:apk.keylogger
+          P:apk.kgl
+          P:apk.kwoapsnde
+          P:apk.screenshotrecorder
+          P:app.EasyLogger
+          P:app.Easylogger
+          P:app.Elogger
+          P:app.childsafetytracker
+          P:app.cybrook.trackvieo
+          P:app.cybrook.trackviep
+          P:app.cybrook.trackvieq
+          P:app.cybrook.trackvier
+          P:app.cybrook.trackvies
+          P:app.cybrook.trackviet
+          P:app.cybrook.trackvieu
+          P:app.cybrook.trackviev
+          P:app.cybrook.trackview
+          P:app.cybrook.trackviex
+          P:app.cybrook.trackviey
+          P:app.cybrook.trackviez
+          P:app.cybrook.trustserv
+          P:app.everspy.ru
+          P:app.lifecircle
+          P:app.seniorsafety
+          P:app.spy24.spy24installer
+          P:app.spy24.systemwifi
+          P:app.trackview
+          P:app.trackview.pro
+          P:br.com.appfornecedor.legal
+          P:br.com.cloud.aplicativo
+          P:br.com.cloud.backup
+          P:br.com.daggers.gameap
+          P:br.com.daggers.toshtec
+          P:br.com.eaglespy
+          P:br.com.galaxys.gameap
+          P:br.com.gamelevel.cloudv3
+          P:br.com.gamelevel.playstart
+          P:br.com.maceda.android.antifurtow
+          P:br.com.monsthers.gameap
+          P:br.com.phonecell.cloud1
+          P:br.com.phonecell.go5ge
+          P:br.com.phonecell.maps
+          P:br.com.phonecell.radio
+          P:br.com.phonecell.services
+          P:br.com.rastreadordenamorado
+          P:br.com.sistema.aplicativo
+          P:bv.vemzye
+          P:city.russ.alltrackercorp
+          P:city.russ.alltrackerfamily
+          P:city.russ.alltrackerinstaller
+          P:cmf0.c3b5bm90zq.patch
+          P:cn.trackview.shentan
+          P:com.AwamiSolution.smartkeylogger
+          P:com.afreesmstracker.app
+          P:com.agpstracker.app
+          P:com.aif.tracksp
+          P:com.aisistem.instalao
+          P:com.aixlunro.uqfhkagb
+          P:com.aiyi.admin
+          P:com.ajygpxjy.bnthtjou
+          P:com.aleghe.hatra
+          P:com.alienmanfc6.wheresmyandroid
+          P:com.amon
+          P:com.androdid.inteernet.aa21111227
+          P:com.android.core.mngi
+          P:com.android.core.mngj
+          P:com.android.core.mngk
+          P:com.android.core.mngl
+          P:com.android.core.mngn
+          P:com.android.core.mngo
+          P:com.android.core.mngp
+          P:com.android.core.mngq
+          P:com.android.core.mngr
+          P:com.android.core.mngs
+          P:com.android.core.mngt
+          P:com.android.core.mngu
+          P:com.android.core.mngv
+          P:com.android.core.mngw
+          P:com.android.core.mngx
+          P:com.android.core.mngy
+          P:com.android.core.mngz
+          P:com.android.core.mnt
+          P:com.android.core.mnta
+          P:com.android.core.mntah
+          P:com.android.core.mntb
+          P:com.android.core.mntd
+          P:com.android.core.mnte
+          P:com.android.core.mntf
+          P:com.android.core.mntg
+          P:com.android.core.mnth
+          P:com.android.core.mnti
+          P:com.android.core.mntj
+          P:com.android.core.mntk
+          P:com.android.core.mntl
+          P:com.android.core.mntm
+          P:com.android.core.mntn
+          P:com.android.core.mnto
+          P:com.android.core.mntp
+          P:com.android.core.mntq
+          P:com.android.core.mntr
+          P:com.android.core.mnts
+          P:com.android.core.mntt
+          P:com.android.core.mntu
+          P:com.android.core.mntv
+          P:com.android.core.mntw
+          P:com.android.core.mntx
+          P:com.android.core.mnty
+          P:com.android.core.mntz
+          P:com.android.core.monitor
+          P:com.android.core.monitor.debug
+          P:com.android.core.monitor.null
+          P:com.android.core.monitornull
+          P:com.android.fystem.maps
+          P:com.android.innovaspy
+          P:com.android.inputmethod.latinmy
+          P:com.android.internet.a20200817
+          P:com.android.internet.a20210916
+          P:com.android.internet.a20220729
+          P:com.android.internet.a20220829
+          P:com.android.internet.a20220914
+          P:com.android.keyboardhelper
+          P:com.android.omg
+          P:com.android.phone.dialer
+          P:com.android.preference.help.mole
+          P:com.android.services
+          P:com.android.settings.app
+          P:com.android.system.app
+          P:com.android.system.devicelogs
+          P:com.android.system.maps
+          P:com.android.wifi.tracker
+          P:com.androidlost
+          P:com.androidlost.smshandler
+          P:com.ant.spymie.keylogger
+          P:com.aphonetracker.app
+          P:com.app.audiorec
+          P:com.app.call_rec_hidden
+          P:com.app.com.app.com.app.aplintal
+          P:com.app.insapp2
+          P:com.app.keylogger
+          P:com.app.recorder
+          P:com.app.remote_control
+          P:com.app.spy_call_recorder
+          P:com.app.videorec
+          P:com.apps.anti_theft
+          P:com.apps.rct.CellTrackerActivity
+          P:com.apspy.app
+          P:com.as.clipboardmanager
+          P:com.as.facecapture
+          P:com.as.gpstracker
+          P:com.as.keylogger
+          P:com.as.keylogger2
+          P:com.as.klogger
+          P:com.as.screenrecorder
+          P:com.as.urllogger
+          P:com.ass.antitheft
+          P:com.ass.ladieschildprotection
+          P:com.ass.remotesecurity
+          P:com.at.wwka
+          P:com.ati.client
+          P:com.ati.monitor
+          P:com.ati.webwatcherconsole
+          P:com.atinc.slcompanion
+          P:com.atiw.wc
+          P:com.atracker.app
+          P:com.autoforward.monitor
+          P:com.avi.scbase
+          P:com.awarenesstech.monitor
+          P:com.awarenesstech.wwpapp
+          P:com.awarenesstechnologies.sideloadedws
+          P:com.awti.slc
+          P:com.backup.tt
+          P:com.bettertomorrowapps.spyyourlovefree
+          P:com.bnahrrbc.kwexsnhl
+          P:com.brot.storage.work
+          P:com.bul.b
+          P:com.bulgakov.bug
+          P:com.bulgakov.controlphone
+          P:com.bytepioneers.coupletracker
+          P:com.bzbqbkya.hgozttiu
+          P:com.callhist.calltr
+          P:com.catrsy.jaluc
+          P:com.cellph.montrb
+          P:com.chaoqi.spyapp
+          P:com.cldprotect
+          P:com.client.requestlogs
+          P:com.cocospy
+          P:com.connection.manager
+          P:com.cryzp.leplluln
+          P:com.cycle.start.mess
+          P:com.dbzbpr.skt
+          P:com.ddiutilities.monitor
+          P:com.dev4playapps.whatsdeleted
+          P:com.devspark.securityotp
+          P:com.droidwatcher
+          P:com.dromon
+          P:com.duiyun.cocospy
+          P:com.duiyun.cocospy.v2
+          P:com.duiyun.fonemonitor
+          P:com.duiyun.spyic
+          P:com.duiyun.spyine
+          P:com.duiyun.spyzie
+          P:com.dy.spyzie.v4
+          P:com.elpatr.woac
+          P:com.epasufob.kybavfgt
+          P:com.epbzrqcg.syzzkuqx
+          P:com.ernell.thht
+          P:com.example.ghazi.sms
+          P:com.example.hellospy
+          P:com.example.lovespy.app
+          P:com.example.openanotherapp
+          P:com.example.reverseshell2
+          P:com.example.wosc.androidclient
+          P:com.eyezy.android
+          P:com.eytewqrm.wvdkgmrl
+          P:com.fbhpdsej.gnuebduy
+          P:com.femimesusu.libapasopi
+          P:com.fenced.ai
+          P:com.fhekpqbq.otlzonjx
+          P:com.fone
+          P:com.fp.backup
+          P:com.fzvsdrtb.qamlhxri
+          P:com.gcm_call_sms_tracker
+          P:com.gcm_call_sms_tracker.updated
+          P:com.gcm_call_tracker
+          P:com.gcm_celltracker
+          P:com.get.mtf
+          P:com.gh.ob
+          P:com.github.muneebwanee.dash
+          P:com.gizmoquip.smstracker
+          P:com.google.android.bacfup
+          P:com.google.android.network
+          P:com.google.android.safe
+          P:com.googleplay.settings
+          P:com.googlesettings.setting
+          P:com.greatdata
+          P:com.gss.whereismyphone
+          P:com.guest
+          P:com.gzomoyig.qwgawtaz
+          P:com.hellospy
+          P:com.hellospy.system
+          P:com.hp.vc
+          P:com.hp.vd
+          P:com.hyadesinc.curiosus
+          P:com.ibm.fb
+          P:com.igyluazm.iytdhsky
+          P:com.imonitor.ainfo
+          P:com.ispyoo
+          P:com.ispyoo.traceyou
+          P:com.itqredn8dzrl
+          P:com.jgeuhcex.ejcxndak
+          P:com.juzyuwqt.thxxnjvf
+          P:com.jyotin.ct
+          P:com.kfhdha.fkjfgjdi
+          P:com.kids.pro
+          P:com.kids.whatsapp
+          P:com.kidsmobmon
+          P:com.laucass.androsmscontrol
+          P:com.laucass.phonecontrolenabler
+          P:com.laucass.phonecontroltarget
+          P:com.local_cell_tracker
+          P:com.local_cell_tracker_updated
+          P:com.lrvciyti.unrxnfig
+          P:com.lsdroid.cerberus
+          P:com.lsdroid.cerberus.client
+          P:com.lsdroid.cerberus.enterprise
+          P:com.lsdroid.cerberus.kids
+          P:com.lsdroid.cerberus.persona
+          P:com.lsdroid.cerberus.persona2
+          P:com.lsdroid.cerberuss
+          P:com.lsdroid.lsp
+          P:com.m.service.control
+          P:com.mango.findmyphone
+          P:com.mango.findmyphone2
+          P:com.mango.findmyphone3
+          P:com.map.system
+          P:com.maxxspy
+          P:com.maxxspy.system
+          P:com.metasploit.stage
+          P:com.meuspy
+          P:com.minspy.v2
+          P:com.minspy.v3
+          P:com.mit.networkadapter
+          P:com.mit.viptrackpro
+          P:com.mnwkvijy.wzyxgrft
+          P:com.mob.service.control
+          P:com.mobiispy
+          P:com.mobiispy.system
+          P:com.mobile.asgard
+          P:com.mobile.gps
+          P:com.mobile.loc
+          P:com.mobile.loki
+          P:com.mobilefindfree
+          P:com.mobileservice.sync
+          P:com.mobileservices2.synchronization
+          P:com.mobilespy.io
+          P:com.mobiletracker
+          P:com.mobiletrackerfree.secondapp
+          P:com.mobiletrackerfree.www
+          P:com.mobitra.todv
+          P:com.mobphn.monit
+          P:com.mobtr.danbel
+          P:com.monitor.phone.s0ft.phonemonitor
+          P:com.monitorchecker
+          P:com.monspap.alarm
+          P:com.mophtr.td
+          P:com.moxlndmp.uhzhgzjh
+          P:com.mrblue.setting
+          P:com.mrbluetooth.setting
+          P:com.mrecorder.callrecorder
+          P:com.mrtred.setred
+          P:com.mspy.lite
+          P:com.mtf.d
+          P:com.mtf.download
+          P:com.mxspy
+          P:com.my.spy.app
+          P:com.myappspqwddeexo
+          P:com.netowrk.service
+          P:com.nhevvtmt.thinkquo
+          P:com.nsmon.guard
+          P:com.ntckdlhc.oifhnjwp
+          P:com.ots.antitheft
+          P:com.ots.ladieschildprotection
+          P:com.ots.remotesecurity
+          P:com.ots.womenchildsafety
+          P:com.ownspy.android
+          P:com.panspy.android
+          P:com.phone.tracker.smsb
+          P:com.phonespector.app
+          P:com.phonetrackerofficial
+          P:com.phonetrackerofficial1
+          P:com.phtranlo.tifach
+          P:com.play.services
+          P:com.popo.analyse
+          P:com.prophoto.editor
+          P:com.protect
+          P:com.protect.download
+          P:com.psac.a.processservice
+          P:com.pser.sysutils
+          P:com.pt.bark
+          P:com.pvojpamt.tzzyqjyb
+          P:com.qwertyuiop.asdfghjkl
+          P:com.qzogle.android.jacfut
+          P:com.qzogle.xndroid.jacfup
+          P:com.qzogle.xndroid.jacfut
+          P:com.rana_aditya.child
+          P:com.realtime.spyapp
+          P:com.remote.app
+          P:com.rephko.stha
+          P:com.retina.phonesheriff
+          P:com.retina21.ms41
+          P:com.retina22.ms6
+          P:com.retinasoft.ephonetracker
+          P:com.rspl15.nanny.android
+          P:com.rspl16.nanny.android
+          P:com.rspl17.nanny.android
+          P:com.rspl18.nanny.android
+          P:com.rspl19.nanny.android
+          P:com.rspl20.nanny.android
+          P:com.rspl21.nanny.android
+          P:com.rspl22.retinaspy
+          P:com.runaki.synclogs
+          P:com.s2m
+          P:com.s2m.seas
+          P:com.sa.app
+          P:com.safesecureservice
+          P:com.saloomughal.spyapp
+          P:com.sap4mobile
+          P:com.saxfamqvxj
+          P:com.sc.cocospy.v2
+          P:com.sc.fonemonitor
+          P:com.sc.fonemonitor.v2
+          P:com.sc.minspy.v2
+          P:com.sc.neatspy.v2
+          P:com.sc.safespy.v2
+          P:com.sc.safespy.v3
+          P:com.sc.spyic.v2
+          P:com.sc.spyic.v3
+          P:com.sc.spyier.v2
+          P:com.sc.spyine.v2
+          P:com.sc.spyzie.v2
+          P:com.sc.teensafe.v2
+          P:com.screentime
+          P:com.sec.android.internet.im.service.im20190118
+          P:com.sec.android.internet.im.service.im20190419
+          P:com.sec.android.internet.im.service.im20210815
+          P:com.sec.provider.mobile.android
+          P:com.selgdg.febgdsra
+          P:com.selgdg.mardsdaf
+          P:com.semantic.childcontrol
+          P:com.sepfsp.jasend
+          P:com.service.mug
+          P:com.services.phone
+          P:com.sev.android.systemdev
+          P:com.shadow.client.android
+          P:com.shadyspy.monitor
+          P:com.simundkarten.g4.cc.starter
+          P:com.sl360
+          P:com.smart
+          P:com.smart.guardoffline
+          P:com.smartback
+          P:com.smstra.xanris
+          P:com.snapch.monabcab
+          P:com.snapchat.trmonap
+          P:com.softalogy.thiefguard
+          P:com.soh
+          P:com.spappm_mondow.alarm
+          P:com.spapptrakapp.alarm
+          P:com.spatrakappp.alarm
+          P:com.spy2mobile
+          P:com.spy2mobile.light
+          P:com.spyapp247.system
+          P:com.spyhumanrev
+          P:com.spyic
+          P:com.spynote.software.stubspynote
+          P:com.spytoapp.system
+          P:com.spyzee
+          P:com.ssurebrec
+          P:com.stmrsa.htxt
+          P:com.surebrec
+          P:com.system.settings
+          P:com.system.task
+          P:com.system.user
+          P:com.systemservice
+          P:com.tag.viptrack
+          P:com.tbntxear.vfmkjxme
+          P:com.tccplos.spth
+          P:com.telephony.android
+          P:com.tevi.walpi
+          P:com.thaxygpc.xjsjobpn
+          P:com.thecybernanny.andapp
+          P:com.thetruth
+          P:com.thewispy
+          P:com.tools.secretcamcorder
+          P:com.topspy
+          P:com.topspy.system
+          P:com.tracker.sms.mobile
+          P:com.trackerapps.whatsaptracker
+          P:com.tracking_smartphone
+          P:com.trackmyphone_pro
+          P:com.trackmyphones.livefamilytracker
+          P:com.trackmyphones.recoverphoneusingchatmessages
+          P:com.trackmyphones.tmpusingchatmessages
+          P:com.trackview
+          P:com.trackzone.kids
+          P:com.trandmon.tool
+          P:com.trphwhat.prob
+          P:com.ts_settings
+          P:com.ttsapp.catchcheating
+          P:com.tuner.funnelwebview
+          P:com.tutorial.instalao
+          P:com.udxlbuno.plwnnhop
+          P:com.uxgbipup.pdtvcgzc
+          P:com.uzoifhzk.qmqnpwaf
+          P:com.viewcalls.rem
+          P:com.viewsms.remb
+          P:com.virsys.tracker
+          P:com.vvt.android.syncmanager
+          P:com.w0f0
+          P:com.w1f1
+          P:com.wSpyEra
+          P:com.wb.production
+          P:com.whtrack.monit
+          P:com.wifi0
+          P:com.wifiset.service
+          P:com.wifisettings.service
+          P:com.wisemo.host.v10
+          P:com.wisemo.wsmguest.v18
+          P:com.wlset.info
+          P:com.ws.sc
+          P:com.ws.scli
+          P:com.wtspy.apps
+          P:com.ww.companion
+          P:com.wwtspy
+          P:com.wzogle.zndroid.yacfup
+          P:com.xhunter.client
+          P:com.xno.systemservice
+          P:com.xnspy.dashboard
+          P:com.yurpdpvxnybmlgh
+          P:com.zkftwsel.fqnoquuv
+          P:core.framework
+          P:core.update.framework
+          P:cybrook.trackview
+          P:dell.scream.application
+          P:edu.virginia.cs.cs4720.ispy
+          P:efexmsz.mzuooelftl
+          P:fka.ugsonrqogw
+          P:fod.loqpf
+          P:g.google.llc
+          P:googlesettings.setting
+          P:ifk.ghumlh
+          P:iiw.orqjtwbkx
+          P:in.servidor.service
+          P:in.spyapp.patanjali.android
+          P:inc.imonitor
+          P:io.github.vvb2060.packageinstaller.test
+          P:iqual.calculadora.pro
+          P:ir.spy24.updater
+          P:ir.spy24.wifi
+          P:kenkbltcf.pwpwkvdwmjk
+          P:lookOut.Secure
+          P:m.mob.control
+          P:m.mob.service2020
+          P:m.mobile.control
+          P:m.phone.control2020
+          P:m.protect.children
+          P:m.protect.parental
+          P:m.secu.children
+          P:m.security.parental
+          P:me.hawkshaw
+          P:med.mspy.mspy
+          P:mg.locations.track5
+          P:mhu.bylbcwc
+          P:mob.protect.children
+          P:mob.service.parental2020
+          P:mobile.controlparental2020
+          P:mobile.monitor.child2021
+          P:mobile.monitor.child2022
+          P:mobile.monitor.child2023
+          P:mobile.monitor.child2034
+          P:mobile.parental2021
+          P:mobile.protect.children
+          P:mobile.protect.children2020
+          P:net.androidcoreapp.androidbackup
+          P:net.cybrook.trackvieo
+          P:net.cybrook.trackviep
+          P:net.cybrook.trackvieq
+          P:net.cybrook.trackvier
+          P:net.cybrook.trackvies
+          P:net.cybrook.trackviet
+          P:net.cybrook.trackvieu
+          P:net.cybrook.trackviev
+          P:net.cybrook.trackview
+          P:net.cybrook.trackviex
+          P:net.cybrook.trackviey
+          P:net.cybrook.trackviez
+          P:net.cybrook.trustserv
+          P:net.delphiboardlayer.androidcoreapp
+          P:net.droid.talk218
+          P:net.homesafe
+          P:net.kidlogger.kidlogger
+          P:net.majorkernelpanic.spydroid
+          P:net.reptilicus.clientapp
+          P:net.someapp1.somecorp2
+          P:net.spy24.wifi
+          P:net.system_updater_abs341
+          P:net.teslineservice.kidl5
+          P:net.trackview
+          P:net.trackview.pro
+          P:net.vkurhandler
+          P:ns.antapp.module
+          P:one.enix.smsforward
+          P:oo.ptkqyawh
+          P:org.alltracker.security
+          P:org.connecting.updived.hygeist.interplays
+          P:org.findmykids.app
+          P:org.findmykids.child
+          P:org.poleward.burghs.hydrotherapy.homonymously
+          P:org.secure.smsgps
+          P:org.system.kernel
+          P:org.traccar.client
+          P:org.traccar.client.hidden
+          P:org.urates.amirates.suffocate.chiliast
+          P:phone.Secure
+          P:pl.lidwin.letmespy
+          P:pl.lidwin.letmespy2
+          P:pl.lidwin.letmespy3
+          P:pl.lidwin.letmespy4
+          P:pl.lidwin.letmespy5
+          P:pl.lidwin.lms
+          P:pl.lidwin.remote
+          P:pl.lidwin.remote1
+          P:pl.lidwin.remote2
+          P:pl.radeal.lms4
+          P:pl.spyone.agent2
+          P:ru.usafe.kid.unisafekids
+          P:ru.usafe.u_safe
+          P:ru.usafe.usafe
+          P:se.vkur.clientapp
+          P:seC.fqjx.sqBB
+          P:security.mobile.parental
+          P:service.download.app
+          P:stealthLight.sys
+          P:su.unisafe.unisafe
+          P:sy.slvzccd
+          P:system.framework
+          P:t.tools.app
+          P:tech.logsettings
+          P:technic.settings
+          P:tej.flashkeylogger
+          P:tej.flashkeyloggerpro
+          P:tej.flashkeylogges
+          P:tracker.mob.gps
+          P:tv.familynk
+          P:tv.familynl
+          P:update.service.android
+          P:update.service.android.installer
+          P:update.service.android.pynger
+          P:us.trackview
+          P:vmf.uxytqgrl
+          P:vn.ehkfqgvn
+          P:wosc.cwf
+          P:wosc.cwf2
+          P:xd.spy.app
+          P:yc.sysupd.client
+          P:yogaworkouts.dailyyoga.yogafitness
+          P:yr.tubjypbl
+          C:002DD372C94E80600C7C60192CBD701A3C3B87EE
+          C:00F618C4C43C28B107DAB8F5641AD00D3A774AFD
+          C:0172D7D80D2F0656711ED87C2433988BFF820E3D
+          C:018D06B4A5679892572CB9DA44BA1A8C1E3B68A5
+          C:01E49C220A9776D4978C1D28D6C32F86D145B8AE
+          C:01EFA0C8FAE43215125ACA78308EFB1768FB4049
+          C:021985CEA754D8E58D538D2FEDFF6B1565A6B45B
+          C:021A3F097EDA780798DF5ECB16EF338C08236847
+          C:0387135D057AEAA0F8BCFCE2AFA84D9BD1FA6F30
+          C:0568E0400308CBFC58E11A324EA233F5B2E923BF
+          C:05B23C7E9156A4C55768DA27936FF2D7AF09BB8F
+          C:06A49FE1347C7D2E596DF2F08B8C235C00975AF8
+          C:07525D7D2E83CE865F98E1B9C0F6095B1C29D48A
+          C:07906D1FA933730B8EB44F03910C88FDAC2C0135
+          C:08ACB92D02487EBC0CEA42B672A631BA7EA59ADF
+          C:09273A6004A46078991F3FBA2A4868DA26DBB508
+          C:09DCBFDB7C7262F143089C5493435AB07564FD67
+          C:0AD33649F0D0532B5EB0A36A81712962AA79BF54
+          C:0AF3219D3A9525CB4A618215DB7A29CBFD9FFE78
+          C:0B6C1B010FBEA4316EB01602F71CDD6A8F365023
+          C:0C01AEB7346C700D02613EBA513BD40E87A182F8
+          C:0C422F0025F866C311DF61A7549FCD519683898D
+          C:0C5AB4D05A2C804D3A4D0472CEAC50B89833E6E4
+          C:0D025A887A1546585D9BBA6F023F42B8BE0274E1
+          C:0DCD7C9CC6A76AD28D7D992C4EF3DF2F768EA473
+          C:0E0BE37D31CA21F19095FC38F9F1BEF310CE227C
+          C:0ECD5FD80682776D804715AB5B8504DAF59A4B54
+          C:0F64B6EBB49849AC685FE5DF605908594623368E
+          C:0FB6108D34289681BA0181ED9A4350514EB07665
+          C:0FB6643902E891C230F6E6662083442EEA1F16CE
+          C:1128939E0D8B8BAEAB14C41AEBFAA100C319AD8F
+          C:114C4DC0F254EFD81F0AC7F41DBE882FFDB2E127
+          C:123C09B261DFA0F67D817E9BA079942830C31D54
+          C:14A071616D4BC37F08BE865D375101F4C963777A
+          C:14EE7779B2E84A0FF1309DEA72881670D78E98AB
+          C:159B64B29BC8842ACDF8022B70730B13E288044B
+          C:16226330EBB138A5D47913151827A86567AD9CD4
+          C:16254E7CBDFEC82B6CCE599DFCE6A6E84CF25504
+          C:18C94FAB82F77F89546600F84D2D2B48A0C0B927
+          C:18CD402CC43DF0BC03E9951B0F843DC4B1552DC6
+          C:1988EDEA389D42983CEC8B5F8A9C27AE49F800F9
+          C:1A6D10E15280C6A938EED9BEF53A31DA0CEBA45A
+          C:1BB7F1E962C35F00BE2EF97A64C753CCA0993637
+          C:1BE914194D14B3DEDA93EA06E0C58ECD420BB89F
+          C:1C6E171D3A6E51947DF9E83946BB115ED4A41C6A
+          C:1CD94B411B5D4D2F5F525D775876FF0993B4B716
+          C:1CE722F401C3FA8FE498FF824669C0007A200AA9
+          C:1DB0D66C1D21DD4B185D03B13D6CF620E4FACBAA
+          C:1E15B0D27C0551061885340A3990D52A93F646B8
+          C:1EBFFD9FE9463B2ED24582D2846990A5ABEF79B9
+          C:1ECC7F67BBD1BFAB97ADDCB05A496BCA7B6B135F
+          C:20948233C3EF1662E79850AE0AB959C4760114C2
+          C:20AB40ACC2822A34EC199622CDCA9D7A63BB302B
+          C:20C940625B322C487A89B1FEBF6C090845B040C1
+          C:20F092BEC76C406223A7943371A1DBBB5BF66C13
+          C:219D2D7FEC2B2DA6E25693A75FC15D2C6F4F6E67
+          C:219D542F901D8DB85C729B0F7AE32410096077CB
+          C:230E35A26E471352DF5DBDBCF9834E0711500CB0
+          C:240E97A0587BF99441787EA3BCB2B2D8827564FE
+          C:2441F6D331D6CFD8624346ED4B1987EAE6534FA3
+          C:24D3251C7A1184649211B9068820545397B112C9
+          C:26AF8554EE338D6969FAC51BF4DAC3186098056E
+          C:26DDA9B261169FB0A63A6CEA5B682B7A190328B6
+          C:26FC20C25AF99E4B6C16ABAD8E8D76AFA55973BB
+          C:271CA9A77AF56B94F942EDA8F517E4B0FD44206C
+          C:272CD0BC357FA03AF87940644CB8FFDECD2FDDC6
+          C:28393DBA55F5B08294D1E54962BE1648C1EFB4A2
+          C:284E4AF2E92E8E49EDC2C8792D7008759813CB68
+          C:28AFF3C41C0D42ACBB6B73C6C08868C442088640
+          C:2919FF38F04D757BA6FE344F1729275739F43E89
+          C:29FFFE437675D2B55512953759C40776E547592D
+          C:2A1C74FFFE33C7D867C7B284FFDBBA4DDD024450
+          C:2A84B79A7E17E1F49642E8D5EA9828CFEA763E8C
+          C:2B02F9708FAD9017D9F709AB2C5C8B5BD0D29394
+          C:2C08279BCC8EB16B2B31ACFBD7E1D4BB28E49A87
+          C:2CF347EA59967F7799AA2C1FDB5D711B2B93D586
+          C:2E104C33C8DA4DB32E59A45701D8E0C4CAD16BD3
+          C:2F033070A8CD93CEAC60F9E203BA33C9A9A3D226
+          C:2FD8BEF4081F126D4DA655B40E9FC63F116DD857
+          C:317A9577A5B2D0930D06E0D8D7427E2F8FCAD29D
+          C:31A6ECECD97CF39BC4126B8745CD94A7C30BF81C
+          C:32570AD62B2DF951A67251ACB49E39E96B8A43BA
+          C:32F6E28DD3E2E61ED94446591E31F89AEE3A9BD2
+          C:3397C095EAD93B13CC5B9979D1F3B4FAEF1D194C
+          C:339B5C1746A1CDEA945D51BBE967C1320AE73CC4
+          C:340E571CB1A64E6EE384D3F8A544681459CF3F5F
+          C:340FE1F4AA4A401AD8E326907E35FB9E0C2486BD
+          C:34B791B5D35A874D189202EEA1FA99188F58A4C1
+          C:35B05ACC96D02849E20D9ED3BA9CEA41C2B83FFA
+          C:35CD797D1736484786152A231920575FABC5C12A
+          C:35D1DB3904A84793394FE5DF7B678E263B1B33A0
+          C:35D7CF057BFA5023CE739A725ADA0DA1FD34D1FF
+          C:35E90A29262F1E6CC25B6E483DEC67161513DE30
+          C:36E6671BC4397F475A350905D9A649A5ADE97BB2
+          C:377223C40330F7925BB238E3A2AC6E1BE1A05749
+          C:37ACE0321E8833F25BDDB363AB395C81354E88A0
+          C:38819265668EEAE6AC3C6C80D1A6530EAE99AD0E
+          C:3930B621F30D13D24692CBBBBC67C59F92F1C9BD
+          C:3935E474CD6EDACB19F24192809B337D376656F6
+          C:39DDEFD8261C1946E4F3160F6A9E200F59F06C11
+          C:3A041A8B1CF12E01AD4AA14779C1FCCA0701FE5C
+          C:3BA583488F36C708025C078D9EB4BEDC3918B098
+          C:3D4D65F3584201E74B186A90C3333C468D3C6A09
+          C:3E1A6646C93A7423A25104A88DA5BECE2F35EFF0
+          C:3E4E5813CA5B9D9BB50B70FAD3C201FAA54B4FD5
+          C:3E929DB5941C185EA4FAC2B0D7BA7589D40A379E
+          C:3E9B3E5190F64BA9A952B7F57942AA21FFDA50BA
+          C:3EA68714AE224B0C0EEED64A14B11D3983C3D6F8
+          C:40159690AF08A01670E3FA07A021F7B1C1437042
+          C:409B589FDEAE073A94D609E2B41A6C0EA952B35A
+          C:4140120093B5655CF559B2A786269CF3F82E3AE9
+          C:41862C48D4BBC2A83DB3CE6EBA0D0C53E3D882B6
+          C:437940A417B58B1C2CDB85EDE4D37C3DE6EFDC95
+          C:43D45CE7BEE36E449434C14973B7D285209414C7
+          C:4474D3395029E6C6744A470EE5F2107DBAEF16A0
+          C:4569A62308FA134A33A5DDCC065D6FDAE5653435
+          C:4579E9E02465DAC399B7A47682813F5104E5D914
+          C:457D2470CA3E635178D224C14C0D743B7C7F9F80
+          C:4591BD0E4CBE86FD7510F1427BA6538BB269AE4D
+          C:45DECBF059864164A4BC644D3EAB8127FC98238A
+          C:473F919A69BBAD3457AF2F0E3AFC34E513F103F1
+          C:483716998F0C092FE82B0B12B1A4BA399D941318
+          C:48A2190050B80F31E1E3CCFAF9909FAD238D9849
+          C:492FF617A79F6C8D80B453815CFE6586E21C5F72
+          C:493812991A9A1CC7BEEFD45F2180CD2FC0AF8913
+          C:4A3742E0C96AFB91954D613AAA637076750E5A0B
+          C:4AF16661FC885F7CC84358CCB8F272308436D5E3
+          C:4CACA12EB37B7A7F07AE380C7E1741D2C36531DF
+          C:4DAD108F915E237CA2834FAC70C077AD8105E804
+          C:4E6B680EF3B588EF53097BC7CEFB778833B8A475
+          C:4F6AD2383DADACCF93EA5BE4300571C315DBDF5B
+          C:4FEAF05665D7CA7D017962CADFDB4E38CC8D79E7
+          C:4FF0174BEDC1D16BE55AC53B98599398AC461F82
+          C:5037E917539B4F31E0B92EBB7A9089C5DC567518
+          C:5051413BB7C4931F5CD25260FFF173739CBE0F3A
+          C:50CADBA5487E7C00D67C8FF0D3A952D7B62BEE9A
+          C:523C42BF2F6CBAFC78BE41043E8E3E3BB311CBA2
+          C:5284272445CE993DE601BB23CAE6BA9E43E4589C
+          C:52B12772C6558D6A44A2DAF9E18FFAE48C577CA7
+          C:53486B8F8790D1848E0842F37B5C6DFA15CD3EBB
+          C:53FADDAF873B7BD00E5AD9F5F05E7888A398CE70
+          C:5407E1CC26F28D6024E0384693045AEA2B24C5DA
+          C:54E4D1ACDA9E3071D27AA7B6470E23F75BF1380B
+          C:554137DEE63BE07CE9687C5886244954277227F5
+          C:558765849658A3821FE4054ED2C1FF6E28B4B8A0
+          C:56BD8EB8A20904E4766D99F6D38D87466C44B114
+          C:56C8FA19250EDBA1A91A37F500DA91FBC0657B1F
+          C:56EF5244378FB6B4EF82D2B9E99BF41F7B97D93A
+          C:57178BA7BE0677C3143C24362FD35A9CF0E311A8
+          C:575A730BC2411897A318DEB23B3C3CC4F63422F5
+          C:575F8E8A04A5967E78BC5B5A3E31FDACF42F4FB1
+          C:597C0169D8C27DE7C6B62C2C252F9ECAC0E562C4
+          C:5A73C8FE7CBA5C9E70B0DF69B3A111C42A10B215
+          C:5AD2ACB089F8BE5112FF5125D94036983DE3E8D5
+          C:5B2265CD0F004A70A0DE7483A5DD450A051F4108
+          C:5C5EF3DFE98B02251A6EC82609F22A092562AFEE
+          C:5C77395F77E17F293CC8C4E3E1FDD48296EE4B28
+          C:5C9031E2340478521630198F3F90E5C8D38D3B64
+          C:5D655F30DE8B8BDABCCDF660582C6369145E7A5A
+          C:5D7B59F3AFB74D86CCD56440F99CA2FC83A23F22
+          C:5E16BA998632C1C3E4D4AE707D6EE2454ED2AEB5
+          C:5E3C376B52C672C81439358DE6348F25F96EAAA4
+          C:5EC970BC602D0EBB2F3C7A5135E24C330B71DE59
+          C:5EEC898F0DBBD70A9B33DD16EE5FF06B6DE26EA6
+          C:5EF38D0143F601FD01AA39BFE9079E9927920208
+          C:5F2DCC133AF3E19D3935A85A3E2871856602A21D
+          C:5F43A60BFC663FB37F419A40015495431649310B
+          C:5F61BEB9591ADBDF9DA5B141A1EF35CDC0944C8C
+          C:6000C3F6A35C81C0AE6ACA73DBF7B7D19DCDB7BC
+          C:60277E8CE202D8023F2ECC86F1726A50D9990576
+          C:603881E46350999FF7A5CBD68FE6A5897C50CEDE
+          C:6041F01561EC43309CCC8452719C4F515C32F3C2
+          C:60DA6A5B04C0100DFCE1213C850EFBDEB0D1E8D7
+          C:6144ED2E25B6F3A5FAFCF914965CA071A685674B
+          C:6156DB551938BB4560D4643B54527E4F169ED44F
+          C:630BB83172B184A6571126229E2B2DCA2EB4123F
+          C:636F6FE622D3059B569C9989F3CD491607F23A5D
+          C:64403A61F41848F987D6FD0BE00392E9561A0EF7
+          C:64AC17A447EB4BCAF556B57C5C66F232C489C7A7
+          C:656CD7890ED79CE8570D1B7156C31958D5AC1606
+          C:665D624FD53E4D538DFE9F7A87087C513CB40506
+          C:6696449AA96EBA57CDF4707F0F84274958BE4523
+          C:683722A1C629AD5734B93E08ADFAA61775AD196F
+          C:68AC78A7CD660ED204B4BC3C73A3F91DA1AE45FC
+          C:68E4A16FD2B8D41E817CC5A06BA95B9CED9BD9F9
+          C:69B327860EDB531DDFFB1B5DBF0C24245A75F3E4
+          C:69C28343A4D0F2156D7B56AE4616E1386173A047
+          C:69EE83CB3E0968B49E33849D40F7D91B0592C7DB
+          C:6A610D0211E543113EFE1A82CC4D270B6A45C526
+          C:6B1DC3EAE0E8C59E7769A6E0A1BAA1938620A191
+          C:6B660EAAEBA47793B7A1278D714669A6612BCA5B
+          C:6C0B8CF7F47DB7A82A2C06D410690935FDD912DF
+          C:6C4E74FD002AEC131F8D05852566055C349E0A54
+          C:6CA8C06D7DAC5F5685E014AE5C4D2062F77B42D6
+          C:6CC6FB667F4D178DF4E9111FE96BE9AEAEE485EF
+          C:6D0FF787BF4534F1077D1E4BF2E18BA381D97061
+          C:6DB1F33668AA745163DFB6C5614C3800BCA8D693
+          C:6DFB725019C7784B400D940DAAEDAED18C5B898B
+          C:6EB49E72D6138B4210D1CA60247D419E5660315C
+          C:6EF8C27EBCF808FFA377A391DB9892B997AF16C9
+          C:6F1CE95315749AC6F377B310C0B831CF05B04C68
+          C:6F1FDA1889463BFA646A950E49E121B7829A884D
+          C:6F93929AB60AC760000E873CD7C56BA79A9E6CAD
+          C:718F3191938DA39D3A4EAC0EF0F44C70F32B0989
+          C:71AD1F579C3DCF32AA1E00E02245D359F80C260B
+          C:71BE35691A181E1524DDF83F931FBC62DC4E7EC6
+          C:724C6500F11737C12C0B89185A60427989656697
+          C:73BF44A503427F7682C7136B109631E3BE4114DE
+          C:757DB1C635344324B665BAF056DC3E4B1D0CC39B
+          C:7688EA09EE353ED077E0A90D401881B63F115A3F
+          C:76A90B5E41FA2AFE14478CDA24A0CA6B4F7FC5F3
+          C:76F6C302533751BED738D40882AC219BAAD65E7B
+          C:77032E80CC0ECEE49B8F2F58F9999330026E0DB3
+          C:77142DA3A865C256FCDD24E187FDCEBA1B4EC587
+          C:77C411957F307F6B971C7C07825CA5EA06F0E36D
+          C:77E86A5C583256B5A52A5AEEB70542CD1BE34A99
+          C:783B1880ECDC5E75620A4C484E3BDBE08D6D4397
+          C:786325AB3E614F868CA2A7F2F0E75EC76A047311
+          C:789A24C1605F1BF2B6D64580C697BD38D9446A7E
+          C:795C30FAD432EE48EDF52B0748BA2749F0915CA3
+          C:79C395148C34F0826E04B37A6632A53A7977A1AA
+          C:7A22EB86FD8D817ED7BFAA03E7A280A03AF20779
+          C:7A55C057800823F710BF32A7D9865B300777E2D5
+          C:7AFD651F96C7C938351396A53895C3C0704F6B96
+          C:7D0F4308B87223AEEFFA65060F0F752E84D363BE
+          C:7D9EDDE23B4D3D7AC459B06ECEBE8EA1350D4F8F
+          C:7DED7756C3DBE351A23BE061E989273888414FE6
+          C:7F11358AC560C5E90B735A21B907F1C8143353DF
+          C:7F5C0D54A813BA9B87A91420CA2C3DE5E7948F09
+          C:7FFE6DA96346FEE822E1F791176CD6970A1DC770
+          C:813A3AD37D87AA36120DFEC64146C311DB5F4CA9
+          C:839FBBE6F3DF8153BB6582247DBBC2A42864A87D
+          C:8418703221A74C73405AD273C28CBC12444D7520
+          C:842676B67005E6561808B650152F598035D12800
+          C:845705FB0FE177970768CE3F5241AEBD99F3BEEE
+          C:849D181E1BEE5084CBE1BACBA8442996A8B1F8C6
+          C:8508603AE680C3BCDE91E6F909BF400F6DC878B4
+          C:854F7978408EA58C5B792C1C1EF9733FC2D5E813
+          C:85A4C4F357A99888725862C351119FBB12C45695
+          C:85AF7A95F8A95541F6B6DE88A8EBC24FF1658E98
+          C:85F12B25CEB58B8376F83209D8D128841132DC51
+          C:86238EC6DF27DD0886B701D73397E2DA99C74066
+          C:8698564FBEC700167FCC53D1AED00FFADF6BED6C
+          C:86D94A8CE736F82D834FA588F34106AE7B69D325
+          C:87EF370B8D6E3089E7F8CDDD6E830B5E4C8CF60B
+          C:8851279B5177EF52B0B8540EE1FCED4BABDFB318
+          C:892C4F172AD3262EC398B40BBF8130C6421040A1
+          C:8A718113C6EDE9473FE4BF1F29E2E807B7EB7B56
+          C:8A92A4F6F9FC52BC8788F17704944614C744716C
+          C:8AD595A53B76014B7B919ED231DB372096D358E7
+          C:8AE2267AEEA0DBFF7D7CC1C82E54343B1B0CFA22
+          C:8B187B3EBEF7D1BC8E32BEC78D36CBF95505A1C1
+          C:8B9540311C46184984B48BF9CB51F1742A8AFB42
+          C:8C017FDB2A81807EC879A8E30F4AB05D5CA02034
+          C:8C76B4444DAE08ECF578AF51D295836F0D9BADC6
+          C:8CD8FB235EA7F9B0FC308C1A59AB561C3869878C
+          C:8CED75E875A2F11B3327A73A6DBD0B25E26533F2
+          C:8D7FEC36654F6B35FA89E079685D637CCEE27755
+          C:8E352F2EE18054DF97C238915C0375AA13305DEC
+          C:8E38D577187544D4E0F747CAEF32B47FD15B07E5
+          C:8F0EAD4F1DA5DAAF8C0F7A51096CECEEF81D0C76
+          C:8F23E1457ADC6189F6ED504A60DF8896FEC6D970
+          C:8F576BEEB71EA74E5F27764917BFF5B508017B68
+          C:917BB5B2D40EC40018541784A06285DE0F50F60F
+          C:91ED4F75A763A63471E1D1D39BA012DF867550D4
+          C:9225C8FD380154467908AE344FBE75CE7EF996B8
+          C:9256E291823DA741B64CB23F7E371D0940E5272E
+          C:927CA44949D7788AA86F9D7F04D7FDACECD1DFB9
+          C:9284CB43B87E9F9C77DA509F1672E884BD6CA876
+          C:92DF71DB15BEEAB77DF36FD879A89E5E0DEF4617
+          C:92EBDB7D7C18A34705A6918B5F327DDB0E8C8452
+          C:93135ABA6FF4B6CFE9B06153B9BDF769AEBC1D87
+          C:9329632A70D41158EBAB6EED27B12D8CB0D47579
+          C:93385A087BB5CAB96EAE83A1AF874E0E39B2990F
+          C:933C19015525266982AC6D830CB6B3D25079777B
+          C:934A3C0DC8912C4F2F8620F666FC7621BD7B97B8
+          C:9427212B33E9D3636970EAB73E2845E0DC59B5AA
+          C:9442F1D40FBAAD7053D130986C4487D0BA5C079F
+          C:9477420001BC79500623374EC586B054AAC97BF9
+          C:95D589A90971992A2038E5961B39C8B6BC77CF19
+          C:96A1F635F940D8D154FD42D550B6201B60692744
+          C:970B463F5103B36326AF8C8349A4106F6932835B
+          C:98140CAE57F4D4CA53EF81F6521E7A0FD601F6E9
+          C:984F8786102D9BF26E5244BBC93733D3609948F4
+          C:986E5892EFB97E807772698BAC701F49CE9CAEA8
+          C:98E76043B54DD7CB76E0E6E384A83646F1865BAE
+          C:98ED5841256A44FB1525FE154C0516ACED82FFF3
+          C:9997E63018756CC7034F94B005205A5E15A3770C
+          C:9B07A93BC509C0AE614AEAFFCD6B56797CD02166
+          C:9B48840CBF93379410172B4B85989624D2B33D59
+          C:9BCE25527FF174A4AD6CDE233B17038641A5EEF9
+          C:9BD494107EFED96F630D29D6E18AE4DCC47149E2
+          C:9DE8D6C6757152EC819C1A09F5665B77F72493A2
+          C:9E09874197988F20DB51EB6A34BFD908AC42C35B
+          C:9ED8DD944D3EB545E1EEEEEC1D8174772CF37C07
+          C:9EECE9B4ECF4DC0C5981FEACFB271E1C0A2967FF
+          C:9F6F25AB4EB39CA27BBB22465E6FDC1FC3791C85
+          C:9FE876AF76CDCB685102A38528A3A732B0872DC6
+          C:A1AA4CD5B6CDBD906E3B27A7D1FA42EA2416ADC3
+          C:A2CD01EE20E3C25575D2D9B9645A52A1FA8C36C6
+          C:A2CE290D98B66B577880F3D7807DC01EB7FCE01B
+          C:A2EBDD14E2AE17F52363BCB751CCBE15BE5A2F8D
+          C:A36C70833A8A796F94CCD56B810D2A123F4F0485
+          C:A40D8FDC7953AD69D970FF00658EB0F58B3A052A
+          C:A4817668612688754B4905C44AB9F70C58C25CB2
+          C:A4E169AAF0068A1FC5F7900B7F59A438B833364C
+          C:A519EF2B8C4E73A097065B322687C9D38DED610C
+          C:A759EC34A1144DC3443A9D4C3286F9F3A4F23FB1
+          C:A75B340A58545B28B7E837582259C1CC2CE21512
+          C:A7E75010B3709D54D52CCE914AF06946744F5F67
+          C:A93266E83B136CBC220062898D308213263E793A
+          C:A9A302C9606AF4BE4468A4FC74F7873DDADA2AB0
+          C:AA0458B6C035E767E61DB7456CBCA89CC4D42090
+          C:AA4F85CD7C24116BB51FA733BE59290B7BB8C204
+          C:AA752803419B66BC6D5CFCD61A7C88935FFE5511
+          C:ACB2CA50376456FD81B5C6C19CF6D717CFBB888B
+          C:AD231A7CD57E2CEF8162F4D341C3573DE2B8F443
+          C:AD62CBB4BD298CF69CDA40997C3E5D70112D7161
+          C:ADF393A6628366341BA488B85A5AE738793BFD17
+          C:AF113D18054A6B8DE74644BCE3F0AE41206B16AC
+          C:AF821DD021558AEDF49730D2892063BD502DEA14
+          C:AFC457A96258490FBC284EE889634B5F3E325B8E
+          C:B0A100360B029E0B2105F60E2C8EEB9053998A7E
+          C:B0B09157DC34E3D20DF6A92EBA0014D36A27C451
+          C:B0F639B67819EDBADC73B9FEFF2582FC58B8F115
+          C:B1336A5F3A017394186563E84AE0D2649FC1697D
+          C:B14E50E56D5D483031137FD247D4A5466D0E61B4
+          C:B374A75F87F992A6F57CF99A24197ABCEB17A1E7
+          C:B4A1513C2C71F08D2EE763CD3FAE585F71F268A9
+          C:B4ED5FA9E2A9176DA53324717A9B10F57191859C
+          C:B5075AB201EE483C8ECADE1BC4FC711293D6932B
+          C:B57FAAB701E26B4C92972442D3A428881E18441A
+          C:B5895930053256D408DE74B66BA132B73CB21527
+          C:B61326887306E5A65726AE6BFD1D720D2760CEFF
+          C:B6A744B0E8AE049AC0C20402EBC137B1192699A9
+          C:B6B58148F1B2198C94BDE546FD2E0734EC7838D6
+          C:B6D2D36C75931CCA18538B79C5DE3A04EF4AF777
+          C:B7285348B05EDAEFF7F032384E4F90182E1C1F27
+          C:B7322B2126B2C4F4DED940D719FE1E63FD233D35
+          C:B7B561250288C8BB44932B591B5451D852A95109
+          C:B7BB744C68FD6EB4C49298E7506BED53DC4773FF
+          C:B8C908630D7D1ED52FA4E5AEC2A2BDA0414F8B3F
+          C:B8CA103D22C39282D7A1E8028D93333E481CCA83
+          C:B8D8C25B1CFE2829D397C8FB166895A6791A43D5
+          C:B8F5FDFAE5920C4CFB6ACE214D39327F299FA76D
+          C:B8FCBCA563B1CD0E79CAC595002422C2E54072B7
+          C:B927DACA3BB3876523E2E8B1BDB56CE84B0DFFF7
+          C:B9D5BAEDCF0C711317E8B6E54D60F0A5EDEE9517
+          C:B9F546776987F0F2FF893325D2CCDF7F62F0D56E
+          C:BB59FC701EAC40C51C9274EA6A8EE623F5002802
+          C:BB5E2C0E8DFDC54730C1E9B48754977E7DBCCCF9
+          C:BC53CC2A9996DE47BF72348F2A592DC0EBDAF06B
+          C:BC682A41C2AA1EFFFD65CE42BBE3FA967A561EEC
+          C:BC693B48B7EC988E275CF9E1CDAA1447A31717D9
+          C:BCA2BCB87F6E28FB403CED643311B135CA0DC0A2
+          C:BD3986483D9B962B029D65BF34BF4B7C568FF204
+          C:BEF28CC19ADFBEADC95137A2BD5035B6046666E9
+          C:BFC4C15E35E3506095B42E2B428E4016B1FFA1AB
+          C:BFF94895A64AEB38B5278BC41B1DB242CD82DA62
+          C:C1D83F5FFE3EC319FF103EC7346CDDF218B5634D
+          C:C270531A6D75EB4EA2AA0F4D6DF2980AFB494CB3
+          C:C276C3B087207C9D3CEEDA766C01E0BDEF7EAC71
+          C:C377ADFF5DF116AB7297D32850ADE8A8FC3F8FB9
+          C:C44894EE63F2E861A6960834A21EB27169150722
+          C:C4B56E3768543190FDBE0AA01DD628E579F5514C
+          C:C51C36FE4F1DFC0C5B8CD55F74773135C1C1E1E5
+          C:C656605BDB536B842319AC008FBB249D8B0A7422
+          C:C7FBC97C3BD3949A6C19FF332E6CF2F2E5CEE561
+          C:C863D800B89648724CD483911FBF756F36497CC9
+          C:C87A87F7F5EDE2D279DDA0CCDE55E6AB85549D70
+          C:C8BAE63357CA1DCD9B084BCC99399C96A5B67D49
+          C:C9BE6C42B975258DEA10EB6946A7986E4FE955E2
+          C:CA5304E94F4BC97DA9D147E76858DBF70AB8B4E6
+          C:CA6F27DDCBE5D7929C82F42F63FF24703A352756
+          C:CB28ADFD818FBFFDF5542F2EFC5140D596EE957E
+          C:CB6E6DEB296275EDF70DC71A62A75AB7B9C8DB89
+          C:CB97E71AFA4665D6D28697B9197046C81E5E5D6C
+          C:CBDA86758FBE8E5A6AB805F493AA151B1F2B95F4
+          C:CC4A78DBE96AC1FA5977E03C97052A9A334113B4
+          C:CC866E79BDAD431A2B1E07229B92E64808221610
+          C:CCCD74B31E53685BFA5A23AD0AE020AF74689085
+          C:CCD5678FF73D6ECF4E74317166422AFE67D77406
+          C:CCE55D4C3E844E8A7542036D40BFBB4AA98B89D7
+          C:CD5724426B602C1CD0BF3BD65EF75B9021C0EC3A
+          C:CD8F39DAECC7793F33D8D847A598373B8F25A7B7
+          C:CE3BB9701274C15D26A92C1D7D34110961EB73F1
+          C:CE94B8512390676F62F3EC61BECEDDDE9AB5519F
+          C:CF627144481D3F1DCFBB6CF12291C540AE325FBE
+          C:D09EE9D79FF75E737429DDE34FD13EDFDDA34E78
+          C:D15A276F181C839E0390672A43065E8D97F140E9
+          C:D1BB66A93F621A66094F28856988C7A2AE9972D0
+          C:D244AA1DD3D4296CE875EDA2E1B0332459F7DACE
+          C:D2A84922F8F747FD7582EFEF4189E06897FA8839
+          C:D3A7E0E542A3E1112741806AC31F341C4200FBA1
+          C:D3E6A092741CBA59BE9308FBA72DF887EAB184FD
+          C:D44524FA0D7866F1798C41C28953DA899B46BE65
+          C:D46492F02F25877E9F5D6CFFA4CE99DAC64D981A
+          C:D667A33203776F2285EBA3E826CD286356EF05D0
+          C:D8418B279414687729D37B34E53AB75D502B9F73
+          C:D943998AEC15B3D70DA3BF00FF7BF580A41F6E4B
+          C:D98C69B50C1092FE21F7CF748DC8B2F91BE56B64
+          C:DAE17DA900E269741688CEA3DAF929A8D896536D
+          C:DBA6211533A354E4BBF685A2EA458AC372C4ECE4
+          C:DBC4B607C3B07C48F40F9D184DE443D651436CA5
+          C:DD34B4E5125F07BA50738192FBE7B745785FC15A
+          C:DDCF7F1032E7D9DA4E3D245A5145363F69F9C393
+          C:DDE822BAF53EF55C49096E866A995464CECB8B1C
+          C:DE648A3253C16692AF71141C069D15C87C3E5495
+          C:E0103BF20E95E826920A3F0F7B3BD03A899127D7
+          C:E023517B163AAAE209CBD97E312752960F575D38
+          C:E0E02AD30F042E096A7A5654217B846EA08C02D1
+          C:E0FCD3E782FB859F7388E4F44A44A5D694114968
+          C:E169250B134E5C46C3064F166E457CDBFCC16524
+          C:E2AC495C52B9FBD49B83CFAE0C167878A2F796A5
+          C:E3620714FB24A45614A456DF1176D482BCD1B032
+          C:E401C172FE10C4893A13B38B1FABAA43473E2900
+          C:E43B5671CBA3F48619BF00D6E380BBC2F02A5DCA
+          C:E458DC7CD8928A41865F502A884F0D51309E0BEF
+          C:E48C6714DBFD2AB6E5CF85C87EFD05BD8E11E6FB
+          C:E6502D8A870C3F3910EA34F5B46D20D923047580
+          C:E689432F7C2A39379BD64CB0BD2A6028F3A666DD
+          C:E6F85CAB3903304DC16197B7EDA8F67ED6D65A1A
+          C:E7D395DF3B8077C733D9BE67D841FDF271F49406
+          C:E82EDEDCDC22C6FA054AA74274AB789412B1C2F5
+          C:E8395BE2A32B62C1BA21E37663E3BF1583E00FAA
+          C:E871393054ED858ACB5854C0DB9F674C42160344
+          C:E8FF1077D207E47AB4B53F275C437C0889579658
+          C:E906D462FA05007DE06423A10539C7E7EAB041CD
+          C:EA35FC50B3B0E0A9E5405BAC2D7E58D7F9559FD0
+          C:EAD44242A3C0A73DEF7976C56AC10A4530E8F67A
+          C:EBD3713DFB02D79ADC90C88DE1E0B547882F5A42
+          C:ED5BADBC20B1B027F5858D29DAFBF66535C46DB9
+          C:EE35E2740576480486307C991C762A3FBA8DA46D
+          C:EF6BC4C13FE455CD98192E56D96317069BDF7658
+          C:EF8006163D09D176083936CFB068BB07A8918118
+          C:F038CD90AFEA9C037A801FFAE67DF55A870879C4
+          C:F18B3369F152EC3C74EC884BE977B3CA0E0C996D
+          C:F1912CEE4B5D6C1EA4070B53B440E2F660FFCBBD
+          C:F21ECAFCFF000686E8EC090F1ECDAECE08798BFF
+          C:F25D72FCCB84BAF7F73467FC9571024B7E274CA3
+          C:F2633353631EE72F7B7A7B946FABE1EF0A339041
+          C:F28F3A97D25E51AB266E56D3B80F04747D242E50
+          C:F3E17DFDB98B1F7774A16967FD1D84D3D9D59389
+          C:F4E6DA34F0071AEB70010EBB69875E5212D69140
+          C:F4F16BDEB31AED018276B47CAD9007063029FD22
+          C:F575CA9980D3075CF728F2081D9EC5F910CC17E8
+          C:F57CACB890BE22907709DDE69ED3887F6943734E
+          C:F57CBB4CBB9834A14AF675222CECA6A0D26D838E
+          C:F5A5336B28456208EF357B4630A93A91206CF21A
+          C:F5C25A3B800311E8053295676ADB112753E03F0B
+          C:F5EAEFDECAD39B93134E859BEDC7D3ED42FBE2B3
+          C:F6422B9D4DD3C7370E3ED2879EA4DC8F463CD2A2
+          C:F6914F044B9385D6005DC9C50A9AECDC2349F413
+          C:F747F0BBEF33FFEE6AFC4E7CFA03B28215985F24
+          C:F7871F09D6E58B9BEA5913FB2FA879E5427725E3
+          C:F8FC21D0709C3C0A3E4FBA81D24AB50979F25C19
+          C:F9181C6CF9AACB3AB1092F5338C3198A8D833431
+          C:F9265164219A1C5DEE4A76D66BEA0C35A1FD6032
+          C:FB2EEA183C183B486B3001EC5FC4E8C906593356
+          C:FB8F23C57D0AFD255FD255B290B2EF6DBB2EAFD8
+          C:FB926CF2937331BB8A46E2C5280233C04DA2342E
+          C:FBC83FD67E3B534B8B03D3B341249DB3186374E2
+          C:FC5A4AD10F0686AA8EAE2C08BA13CC451CBD6037
+          C:FC786B8F918655D45245C685A471BD57F02FB366
+          C:FCB6F780EA8F2FE7249F66C6348572BDBD54F576
+          C:FD4C2144DF6E431378A46EAEACC696AF94DE9D56
+          C:FD5E1BBC94E5609F366DD4816C975C1CF4003F40
+          C:FD84821C80C1499A2446F6F7E13BF8BDA6A66402
+          C:FE7626A8D3C38FD78EA2A729B39B943BA814F014
+          C:FE821A533BDC31822D9EB5F98243EB16917C8EE7
+          C:FED69D6F09AE8C98DD4053C1934CCAF57D31824D
+          C:FEEF07EA18BA2EF7B75AD311F45A45AB4C1E8F0E
+          C:FF8CCD9816B0524A58FBDE1809FB227DBCDFD692
+          EOF_PRJ
+          mkdir -p "$(dirname 'app/src/main/java/it/privacycheck/Cleaner.kt')"
+          cat > 'app/src/main/java/it/privacycheck/Cleaner.kt' <<'EOF_PRJ'
+          package it.privacycheck
+
+          import android.app.AppOpsManager
+          import android.app.usage.StorageStatsManager
+          import android.app.usage.UsageStatsManager
+          import android.content.Context
+          import android.content.pm.ApplicationInfo
+          import android.media.MediaScannerConnection
+          import android.os.Environment
+          import android.os.Process
+          import android.os.storage.StorageManager
+          import java.io.File
+          import java.io.FileInputStream
+          import java.security.MessageDigest
+
+          class JunkCategory(val title: String, val hint: String, var checked: Boolean) {
+              val files = ArrayList<File>()
+              val dirs = ArrayList<File>()
+              var bytes = 0L
+              val count: Int get() = files.size + dirs.size
+          }
+
+          data class AppSize(val pkg: String, val label: String, val cache: Long, val total: Long)
+
+          data class UnusedApp(val pkg: String, val label: String, val total: Long, val daysAgo: Int?)
+
+          private class Item(val dir: File, val depth: Int, val thumbs: Boolean, val hidden: Boolean)
+
+          @Suppress("DEPRECATION")
+          object Cleaner {
+
+              private val tempExt = setOf("tmp", "temp", "log", "dmp", "chk")
+              private const val DAY = 24L * 3600L * 1000L
+
+              fun hasAllFiles(): Boolean = Environment.isExternalStorageManager()
+
+              fun hasUsageAccess(ctx: Context): Boolean {
+                  val ops = ctx.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+                  val mode = ops.unsafeCheckOpNoThrow(
+                      AppOpsManager.OPSTR_GET_USAGE_STATS,
+                      Process.myUid(),
+                      ctx.packageName
+                  )
+                  return mode == AppOpsManager.MODE_ALLOWED
+              }
+
+              private fun hash(f: File): String? {
+                  return try {
+                      val md = MessageDigest.getInstance("SHA-1")
+                      FileInputStream(f).use { input ->
+                          val buf = ByteArray(65536)
+                          while (true) {
+                              val n = input.read(buf)
+                              if (n < 0) break
+                              md.update(buf, 0, n)
+                          }
+                      }
+                      md.digest().joinToString("") { "%02x".format(it) }
+                  } catch (e: Exception) {
+                      null
+                  }
+              }
+
+              /** Cerca file inutili nell'archivio condiviso. Non modifica nulla. */
+              fun scanJunk(): List<JunkCategory> {
+                  val apk = JunkCategory(
+                      "Installer APK",
+                      "File .apk già scaricati: dopo l'installazione non servono più.",
+                      true
+                  )
+                  val temp = JunkCategory(
+                      "File temporanei e di log",
+                      "File .tmp, .temp, .log, .dmp, .chk lasciati da app e sistema.",
+                      true
+                  )
+                  val thumbs = JunkCategory(
+                      "Miniature in cache",
+                      "Cartelle .thumbnails e file .thumbdata: Android le ricrea se servono.",
+                      true
+                  )
+                  val empty = JunkCategory(
+                      "Cartelle vuote",
+                      "Cartelle senza alcun file (le cartelle principali come DCIM non vengono toccate).",
+                      true
+                  )
+                  val dup = JunkCategory(
+                      "File duplicati",
+                      "Copie identiche di foto, video e documenti: viene tenuto l'esemplare più vecchio.",
+                      false
+                  )
+
+                  val root = Environment.getExternalStorageDirectory()
+                  val candidates = ArrayList<File>()
+                  val stack = ArrayList<Item>()
+                  stack.add(Item(root, 0, false, false))
+                  var visited = 0
+
+                  while (stack.isNotEmpty() && visited < 300000) {
+                      val cur = stack.removeAt(stack.size - 1)
+                      val entries = cur.dir.listFiles() ?: continue
+                      if (entries.isEmpty() && cur.depth >= 2) {
+                          empty.dirs.add(cur.dir)
+                          continue
+                      }
+                      for (e in entries) {
+                          visited++
+                          if (e.isDirectory) {
+                              if (cur.depth == 0 && e.name == "Android") continue
+                              val isThumbs = cur.thumbs || e.name.equals(".thumbnails", ignoreCase = true)
+                              stack.add(Item(e, cur.depth + 1, isThumbs, cur.hidden || e.name.startsWith(".")))
+                          } else if (e.isFile) {
+                              val len = e.length()
+                              val lower = e.name.lowercase()
+                              val ext = lower.substringAfterLast('.', "")
+                              if (cur.thumbs || lower.startsWith(".thumbdata")) {
+                                  thumbs.files.add(e)
+                                  thumbs.bytes += len
+                              } else if (ext == "apk") {
+                                  apk.files.add(e)
+                                  apk.bytes += len
+                              } else if (ext in tempExt) {
+                                  temp.files.add(e)
+                                  temp.bytes += len
+                              } else if (!cur.hidden && len >= 51200L) {
+                                  candidates.add(e)
+                              }
+                          }
+                      }
+                  }
+
+                  // Duplicati: stessa dimensione, poi stesso contenuto (SHA-1)
+                  val bySize = candidates.groupBy { it.length() }
+                  for ((size, group) in bySize) {
+                      if (group.size < 2 || size > 200L * 1024L * 1024L) continue
+                      val byHash = HashMap<String, MutableList<File>>()
+                      for (f in group) {
+                          val h = hash(f) ?: continue
+                          byHash.getOrPut(h) { ArrayList() }.add(f)
+                      }
+                      for (same in byHash.values) {
+                          if (same.size < 2) continue
+                          val sorted = same.sortedBy { it.lastModified() }
+                          for (f in sorted.drop(1)) {
+                              dup.files.add(f)
+                              dup.bytes += size
+                          }
+                      }
+                  }
+
+                  return listOf(apk, temp, thumbs, empty, dup).filter { it.count > 0 }
+              }
+
+              /** Elimina i file delle categorie. Restituisce (byte liberati, file non eliminati). */
+              fun delete(ctx: Context, cats: List<JunkCategory>): Pair<Long, Int> {
+                  var freed = 0L
+                  var failed = 0
+                  val paths = ArrayList<String>()
+                  for (c in cats) {
+                      for (f in c.files) {
+                          val len = f.length()
+                          if (f.delete()) {
+                              freed += len
+                              paths.add(f.absolutePath)
+                          } else {
+                              failed++
+                          }
+                      }
+                      // File.delete() su una cartella non vuota fallisce: è voluto, è una protezione.
+                      for (d in c.dirs.sortedByDescending { it.absolutePath.length }) {
+                          d.delete()
+                      }
+                  }
+                  if (paths.isNotEmpty()) {
+                      try {
+                          MediaScannerConnection.scanFile(ctx, paths.toTypedArray(), null, null)
+                      } catch (e: Exception) {
+                          // ignora
+                      }
+                  }
+                  return Pair(freed, failed)
+              }
+
+              /** Dimensioni e cache di ogni app. Richiede l'accesso alle statistiche di utilizzo. */
+              fun appSizes(ctx: Context): List<AppSize> {
+                  val ssm = ctx.getSystemService(Context.STORAGE_STATS_SERVICE) as StorageStatsManager
+                  val pm = ctx.packageManager
+                  val me = Process.myUserHandle()
+                  val out = ArrayList<AppSize>()
+                  for (ai in pm.getInstalledApplications(0)) {
+                      try {
+                          val st = ssm.queryStatsForPackage(StorageManager.UUID_DEFAULT, ai.packageName, me)
+                          out.add(
+                              AppSize(
+                                  ai.packageName,
+                                  pm.getApplicationLabel(ai).toString(),
+                                  st.cacheBytes,
+                                  st.appBytes + st.dataBytes
+                              )
+                          )
+                      } catch (e: Exception) {
+                          // app non misurabile
+                      }
+                  }
+                  return out
+              }
+
+              /** App non di sistema che non risultano aperte da oltre 60 giorni. */
+              fun unusedApps(ctx: Context, sizes: List<AppSize>): List<UnusedApp> {
+                  val usm = ctx.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+                  val now = System.currentTimeMillis()
+                  val stats = usm.queryAndAggregateUsageStats(now - 120L * DAY, now)
+                  val pm = ctx.packageManager
+                  val limit = now - 60L * DAY
+                  val sizeMap = sizes.associateBy { it.pkg }
+                  val out = ArrayList<UnusedApp>()
+                  for (ai in pm.getInstalledApplications(0)) {
+                      if ((ai.flags and ApplicationInfo.FLAG_SYSTEM) != 0) continue
+                      if (ai.packageName == ctx.packageName) continue
+                      if (pm.getLaunchIntentForPackage(ai.packageName) == null) continue
+                      val installed = try {
+                          pm.getPackageInfo(ai.packageName, 0).firstInstallTime
+                      } catch (e: Exception) {
+                          now
+                      }
+                      if (installed > limit) continue
+                      val last = stats[ai.packageName]?.lastTimeUsed ?: 0L
+                      if (last < limit) {
+                          val days = if (last <= 0L) null else ((now - last) / DAY).toInt()
+                          out.add(
+                              UnusedApp(
+                                  ai.packageName,
+                                  pm.getApplicationLabel(ai).toString(),
+                                  sizeMap[ai.packageName]?.total ?: 0L,
+                                  days
+                              )
+                          )
+                      }
+                  }
+                  return out.sortedByDescending { it.total }.take(12)
+              }
+          }
+          EOF_PRJ
+          mkdir -p "$(dirname 'app/src/main/java/it/privacycheck/MainActivity.kt')"
+          cat > 'app/src/main/java/it/privacycheck/MainActivity.kt' <<'EOF_PRJ'
+          package it.privacycheck
+
+          import android.Manifest
+          import android.accessibilityservice.AccessibilityServiceInfo
+          import android.app.Activity
+          import android.app.AlertDialog
+          import android.app.admin.DevicePolicyManager
+          import android.content.ComponentName
+          import android.content.Context
+          import android.content.Intent
+          import android.content.pm.ApplicationInfo
+          import android.content.pm.PackageInfo
+          import android.content.pm.PackageManager
+          import android.content.res.ColorStateList
+          import android.graphics.Color
+          import android.graphics.Typeface
+          import android.graphics.drawable.GradientDrawable
+          import android.graphics.drawable.StateListDrawable
+          import android.net.Uri
+          import android.os.Build
+          import android.os.Bundle
+          import android.os.Environment
+          import android.os.StatFs
+          import android.provider.MediaStore
+          import android.provider.Settings
+          import android.text.format.DateFormat
+          import android.text.format.Formatter
+          import android.view.Gravity
+          import android.view.accessibility.AccessibilityManager
+          import android.view.inputmethod.InputMethodManager
+          import android.widget.Button
+          import android.widget.CheckBox
+          import android.widget.LinearLayout
+          import android.widget.ScrollView
+          import android.widget.TextView
+          import android.widget.Toast
+          import java.security.MessageDigest
+          import java.util.Date
+
+          data class AppFinding(
+              val pkg: String,
+              val label: String,
+              val score: Int,
+              val reasons: List<String>
+          )
+
+          data class Report(
+              val flagged: List<AppFinding>,
+              val quietCount: Int,
+              val camApps: List<String>,
+              val micApps: List<String>,
+              val accLines: List<String>,
+              val keyboardLines: List<String>,
+              val photoLines: List<String>?,
+              val bigFiles: List<String>?,
+              val storageLine: String,
+              val spyHits: List<String>,
+              val stalkerDbSize: Int
+          )
+
+          @Suppress("DEPRECATION")
+          class MainActivity : Activity() {
+
+              private lateinit var box: LinearLayout
+              private var screen = "intro"
+              private var token = 0
+
+              private var spyPk: Set<String>? = null
+              private var spyCert: Set<String>? = null
+
+              // Palette "terminale"
+              private val red = Color.parseColor("#FF3B30")
+              private val orange = Color.parseColor("#FFB000")
+              private val green = Color.parseColor("#00FF41")
+              private val dark = Color.parseColor("#00E63B")
+              private val grey = Color.parseColor("#00A329")
+
+              private val storeInstallers = setOf(
+                  "com.android.vending",
+                  "com.sec.android.app.samsungapps",
+                  "com.huawei.appmarket",
+                  "com.xiaomi.mipicks",
+                  "com.amazon.venezia",
+                  "com.heytap.market",
+                  "com.oppo.market",
+                  "com.vivo.appstore",
+                  "com.google.android.packageinstaller",
+                  "com.android.packageinstaller"
+              )
+
+              override fun onCreate(savedInstanceState: Bundle?) {
+                  super.onCreate(savedInstanceState)
+                  window.statusBarColor = Color.BLACK
+                  window.navigationBarColor = Color.BLACK
+                  val scroll = ScrollView(this)
+                  scroll.setBackgroundColor(Color.BLACK)
+                  box = LinearLayout(this)
+                  box.orientation = LinearLayout.VERTICAL
+                  box.setPadding(dp(16), dp(28), dp(16), dp(28))
+                  scroll.addView(box)
+                  setContentView(scroll)
+                  showIntro()
+              }
+
+              override fun onResume() {
+                  super.onResume()
+                  if (screen == "cleanHome") showCleanHome()
+              }
+
+              override fun onBackPressed() {
+                  if (screen != "intro") showIntro() else super.onBackPressed()
+              }
+
+              // ---------- UI helpers ----------
+
+              private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
+
+              private fun text(
+                  s: String,
+                  size: Float = 14f,
+                  color: Int = dark,
+                  bold: Boolean = false,
+                  pad: Int = 5
+              ): TextView {
+                  val t = TextView(this)
+                  t.text = s
+                  t.textSize = size
+                  t.setTextColor(color)
+                  t.setTypeface(Typeface.MONOSPACE, if (bold) Typeface.BOLD else Typeface.NORMAL)
+                  t.setPadding(0, dp(pad), 0, dp(pad))
+                  box.addView(t)
+                  return t
+              }
+
+              private fun title(s: String) {
+                  text("> $s" + "_", size = 22f, color = green, bold = true, pad = 4)
+                  sep()
+              }
+
+              private fun sep() {
+                  text("====================================", size = 12f, color = grey, pad = 1)
+              }
+
+              private fun section(s: String) {
+                  text("## $s ##", size = 16f, color = green, bold = true, pad = 12)
+              }
+
+              private fun buttonBg(): StateListDrawable {
+                  val normal = GradientDrawable()
+                  normal.setColor(Color.BLACK)
+                  normal.setStroke(dp(1), green)
+                  val pressed = GradientDrawable()
+                  pressed.setColor(Color.parseColor("#004D14"))
+                  pressed.setStroke(dp(1), green)
+                  val sl = StateListDrawable()
+                  sl.addState(intArrayOf(android.R.attr.state_pressed), pressed)
+                  sl.addState(intArrayOf(), normal)
+                  return sl
+              }
+
+              private fun button(label: String, action: () -> Unit) {
+                  val b = Button(this)
+                  b.text = label
+                  b.isAllCaps = false
+                  b.setTextColor(green)
+                  b.setTypeface(Typeface.MONOSPACE, Typeface.BOLD)
+                  b.textSize = 14f
+                  b.gravity = Gravity.START or Gravity.CENTER_VERTICAL
+                  b.background = buttonBg()
+                  b.stateListAnimator = null
+                  b.setOnClickListener { action() }
+                  val lp = LinearLayout.LayoutParams(
+                      LinearLayout.LayoutParams.MATCH_PARENT,
+                      LinearLayout.LayoutParams.WRAP_CONTENT
+                  )
+                  lp.setMargins(0, dp(6), 0, dp(6))
+                  box.addView(b, lp)
+              }
+
+              private fun backButton() {
+                  button("[<] Menu principale") { showIntro() }
+              }
+
+              private fun openSettings(action: String) {
+                  try {
+                      startActivity(Intent(action))
+                  } catch (e: Exception) {
+                      try {
+                          startActivity(Intent(Settings.ACTION_SETTINGS))
+                      } catch (e2: Exception) {
+                          // niente da fare
+                      }
+                  }
+              }
+
+              private fun openApp(pkg: String) {
+                  try {
+                      startActivity(
+                          Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$pkg"))
+                      )
+                  } catch (e: Exception) {
+                      // niente da fare
+                  }
+              }
+
+              private fun fmt(bytes: Long): String = Formatter.formatFileSize(this, bytes)
+
+              // ---------- Menu ----------
+
+              private fun showIntro() {
+                  token++
+                  screen = "intro"
+                  box.removeAllViews()
+                  text("> CONTROLLO_PRIVACY_", size = 26f, color = green, bold = true, pad = 4)
+                  text("Versione 3.0", size = 12f, color = grey, pad = 1)
+                  text("Nessun accesso a Internet: i dati restano nel telefono.", size = 12f, color = grey, pad = 1)
+                  sep()
+                  button("[1] Sicurezza del dispositivo") { showSecurity() }
+                  button("[2] Scansione privacy + app spia") { startScan() }
+                  button("[3] Rilevatore di tracker") { startTrackerScan() }
+                  button("[4] Pulizia e prestazioni") { showCleanHome() }
+                  button("[?] Informazioni e limiti") { showAbout() }
+              }
+
+              private fun showAbout() {
+                  screen = "about"
+                  box.removeAllViews()
+                  title("INFO")
+                  text(
+                      "Questa app usa solo le funzioni ufficiali di Android. Non ha il permesso " +
+                          "Internet, non invia nulla e non elimina niente senza la tua conferma.",
+                      color = dark
+                  )
+                  section("Fonti")
+                  text(
+                      "Elenco di app spia (nomi dei pacchetti e firme): progetto " +
+                          "stalkerware-indicators di Echap, licenza CC-BY 4.0. " +
+                          "L'elenco è una copia inclusa nell'app e può non essere completo.",
+                      size = 13f, color = grey
+                  )
+                  section("Limiti")
+                  text(
+                      "• Non può leggere i dati di altre app né vedere in tempo reale chi usa " +
+                          "fotocamera e microfono.\n" +
+                          "• Non può svuotare la cache o la cronologia di altre app: Android lo vieta.\n" +
+                          "• Non è un antivirus: confronta app e firme con un elenco noto e cerca indizi.\n" +
+                          "• I risultati sono indizi, non prove.\n" +
+                          "• Se sospetti un controllo nascosto, il ripristino di fabbrica è la soluzione " +
+                          "più sicura (salva prima i dati e cambia le password da un altro dispositivo).",
+                      size = 13f, color = grey
+                  )
+                  backButton()
+              }
+
+              // ---------- Sicurezza del dispositivo ----------
+
+              private fun showSecurity() {
+                  screen = "security"
+                  box.removeAllViews()
+                  title("SICUREZZA_DISPOSITIVO")
+                  val res = SecurityCheck.run(this)
+                  val col = if (res.score >= 80) green else if (res.score >= 60) orange else red
+                  text("PUNTEGGIO: " + res.score + "/100", size = 24f, color = col, bold = true, pad = 8)
+                  for (c in res.checks) {
+                      val tag = when (c.level) {
+                          0 -> "[OK]"
+                          1 -> "[--]"
+                          2 -> "[!!]"
+                          else -> "[XX]"
+                      }
+                      val color = when (c.level) {
+                          0 -> dark
+                          1 -> grey
+                          2 -> orange
+                          else -> red
+                      }
+                      val t = text(tag + " " + c.title + "\n     " + c.detail, size = 13f, color = color, pad = 7)
+                      val act = c.action
+                      if (act != null) t.setOnClickListener { openSettings(act) }
+                  }
+                  text("Tocca una riga con [!!] o [XX] per aprire l'impostazione relativa.", size = 12f, color = grey, pad = 10)
+                  button("[>] Ripeti controllo") { showSecurity() }
+                  backButton()
+              }
+
+              // ---------- Scansione privacy ----------
+
+              private fun startScan() {
+                  val needed = if (Build.VERSION.SDK_INT >= 33) {
+                      arrayOf(
+                          Manifest.permission.READ_MEDIA_IMAGES,
+                          Manifest.permission.READ_MEDIA_VIDEO
+                      )
+                  } else {
+                      arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+                  }
+                  val missing = needed.filter {
+                      checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
+                  }
+                  if (missing.isEmpty()) {
+                      runScan()
+                  } else {
+                      screen = "privacyPerm"
+                      requestPermissions(missing.toTypedArray(), 1)
+                  }
+              }
+
+              override fun onRequestPermissionsResult(
+                  requestCode: Int,
+                  permissions: Array<out String>,
+                  grantResults: IntArray
+              ) {
+                  super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+                  runScan()
+              }
+
+              private fun runScan() {
+                  token++
+                  val my = token
+                  screen = "privacy"
+                  box.removeAllViews()
+                  title("SCANSIONE_PRIVACY")
+                  text("Analisi in corso…", size = 18f, bold = true)
+                  text("Può richiedere qualche secondo.", color = grey)
+                  Thread {
+                      val report = try {
+                          scan()
+                      } catch (e: Exception) {
+                          null
+                      }
+                      runOnUiThread {
+                          if (my == token) {
+                              if (report == null) {
+                                  box.removeAllViews()
+                                  title("ERRORE")
+                                  text("Errore durante l'analisi.", color = red)
+                                  button("[>] Riprova") { startScan() }
+                                  backButton()
+                              } else {
+                                  showReport(report)
+                              }
+                          }
+                      }
+                  }.start()
+              }
+
+              private fun showReport(r: Report) {
+                  box.removeAllViews()
+                  title("RISULTATO_PRIVACY")
+
+                  if (r.spyHits.isNotEmpty()) {
+                      text(
+                          "[XX] APP SPIA NOTE RILEVATE: " + r.spyHits.size,
+                          size = 17f, color = red, bold = true, pad = 8
+                      )
+                      for (h in r.spyHits) text(">> $h", color = red)
+                      text(
+                          "Tocca l'app nell'elenco qui sotto per aprirne la scheda e disinstallarla. " +
+                              "ATTENZIONE: se sospetti che l'abbia installata un partner o un familiare " +
+                              "violento, rimuoverla potrebbe avvisarlo. Valuta prima di contattare un " +
+                              "centro antiviolenza (in Italia: 1522, gratuito e attivo 24 ore su 24).",
+                          size = 12f, color = orange
+                      )
+                  } else {
+                      text(
+                          "[OK] Nessuna corrispondenza con " + r.stalkerDbSize + " indicatori noti di app spia.",
+                          color = green, bold = true, pad = 8
+                      )
+                  }
+
+                  val high = r.flagged.count { it.score >= 4 }
+                  val mid = r.flagged.size - high
+                  if (high > 0) {
+                      text("[!!] $high app con rischio ALTO, $mid con rischio medio.", size = 15f, color = red, bold = true)
+                  } else if (mid > 0) {
+                      text("[!!] $mid app da controllare (rischio medio).", size = 15f, color = orange, bold = true)
+                  } else {
+                      text("[OK] Nessun segnale evidente nelle altre app.", size = 15f, color = green, bold = true)
+                  }
+                  text(
+                      "Sono indizi, non prove: molte app legittime usano questi permessi. " +
+                          "Controlla che ti siano familiari e che ti servano.",
+                      size = 12f, color = grey
+                  )
+
+                  section("APP DA CONTROLLARE")
+                  if (r.flagged.isEmpty()) {
+                      text("Nessuna app con segnali significativi.", color = green)
+                  }
+                  for (f in r.flagged) {
+                      val level = if (f.score >= 10) "APP SPIA NOTA" else if (f.score >= 4) "RISCHIO ALTO" else "RISCHIO MEDIO"
+                      val t = text(
+                          f.label + "  [" + level + "]\n" +
+                              f.reasons.joinToString("\n") { "  - $it" } +
+                              "\n  (tocca per aprire la scheda dell'app)",
+                          size = 13f,
+                          color = if (f.score >= 4) red else orange,
+                          pad = 8
+                      )
+                      t.setOnClickListener { openApp(f.pkg) }
+                  }
+                  if (r.quietCount > 0) {
+                      text("Altre app installate senza segnali rilevanti: ${r.quietCount}", size = 12f, color = grey)
+                  }
+
+                  section("ACCESSIBILITA ATTIVA")
+                  text(
+                      "Possono leggere lo schermo e ciò che scrivi. Normali per app come TalkBack; " +
+                          "sospetti se non li hai attivati tu.",
+                      size = 12f, color = grey
+                  )
+                  if (r.accLines.isEmpty()) text("[OK] Nessuno attivo.", color = green)
+                  for (l in r.accLines) text("- $l", size = 13f)
+
+                  section("TASTIERE ABILITATE")
+                  for (l in r.keyboardLines) text("- $l", size = 13f)
+
+                  section("ACCESSO FOTOCAMERA")
+                  text(if (r.camApps.isEmpty()) "Nessuna app non di sistema." else r.camApps.joinToString(", "), size = 13f)
+
+                  section("ACCESSO MICROFONO")
+                  text(if (r.micApps.isEmpty()) "Nessuna app non di sistema." else r.micApps.joinToString(", "), size = 13f)
+
+                  section("FOTO DA ALTRE APP")
+                  if (r.photoLines == null) {
+                      text(
+                          "Per questo controllo serve il permesso di leggere le foto. " +
+                              "Rilancia il controllo e concedilo.",
+                          size = 13f, color = grey
+                      )
+                  } else if (r.photoLines.isEmpty()) {
+                      text("[OK] Nessuna foto creata da app diverse dalla fotocamera.", color = green)
+                  } else {
+                      text(
+                          "Foto create da app che non sono la fotocamera. Non è per forza un problema " +
+                              "(app di blocco che scattano il selfie a chi sbaglia il PIN, filtri, scanner).",
+                          size = 12f, color = grey
+                      )
+                      for (l in r.photoLines) text("- $l", size = 13f)
+                  }
+
+                  section("SPAZIO")
+                  text(r.storageLine, size = 13f)
+                  if (r.bigFiles != null && r.bigFiles.isNotEmpty()) {
+                      text("File multimediali più grandi:", bold = true, size = 13f)
+                      for (l in r.bigFiles) text("- $l", size = 12f)
+                  }
+
+                  section("SCORCIATOIE")
+                  button("[>] Impostazioni Privacy (accessi recenti)") {
+                      openSettings("android.settings.PRIVACY_SETTINGS")
+                  }
+                  button("[>] Impostazioni Accessibilità") {
+                      openSettings(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                  }
+                  button("[>] Sicurezza (amministratori dispositivo)") {
+                      openSettings(Settings.ACTION_SECURITY_SETTINGS)
+                  }
+                  button("[>] Elenco di tutte le app") {
+                      openSettings(Settings.ACTION_MANAGE_ALL_APPLICATIONS_SETTINGS)
+                  }
+                  button("[>] Ripeti il controllo") { startScan() }
+                  backButton()
+
+                  text(
+                      "Limiti: l'app non può leggere i dati di altre app né dimostrare che nessuno " +
+                          "registri ciò che digiti. Se hai il fondato sospetto di un controllo " +
+                          "nascosto, il ripristino di fabbrica è la soluzione più sicura.",
+                      size = 11f, color = grey, pad = 14
+                  )
+              }
+
+              // ---------- Tracker ----------
+
+              private fun startTrackerScan() {
+                  token++
+                  val my = token
+                  screen = "trackers"
+                  box.removeAllViews()
+                  title("RILEVATORE_TRACKER")
+                  text(
+                      "Cerco nel codice delle app installate le librerie pubblicitarie e di " +
+                          "tracciamento più note. Può richiedere uno o due minuti.",
+                      size = 13f, color = grey
+                  )
+                  val pv = text("Avvio…", size = 16f, bold = true, pad = 10)
+                  Thread {
+                      val res = try {
+                          Trackers.scanAll(this) { done, total ->
+                              runOnUiThread {
+                                  if (my == token) pv.text = "Analisi: $done / $total app"
+                              }
+                          }
+                      } catch (e: Exception) {
+                          null
+                      }
+                      runOnUiThread {
+                          if (my == token) {
+                              if (res == null) {
+                                  box.removeAllViews()
+                                  title("ERRORE")
+                                  text("Errore durante l'analisi.", color = red)
+                                  backButton()
+                              } else {
+                                  showTrackerReport(res)
+                              }
+                          }
+                      }
+                  }.start()
+              }
+
+              private fun showTrackerReport(res: TrackerResult) {
+                  screen = "trackerReport"
+                  box.removeAllViews()
+                  title("RISULTATO_TRACKER")
+                  val withT = res.apps.filter { it.trackers.isNotEmpty() }.sortedByDescending { it.trackers.size }
+                  if (withT.isEmpty()) {
+                      text("[OK] Nessun tracker noto trovato in " + res.analyzed + " app.", color = green, bold = true)
+                  } else {
+                      text(
+                          "[!!] " + withT.size + " app su " + res.analyzed + " contengono tracker noti.",
+                          size = 16f, color = orange, bold = true, pad = 8
+                      )
+                      val counts = HashMap<String, Int>()
+                      for (a in withT) for (t in a.trackers) counts[t] = (counts[t] ?: 0) + 1
+
+                      section("TRACKER PIU DIFFUSI")
+                      for (e in counts.entries.sortedByDescending { it.value }.take(10)) {
+                          text("- " + e.key + ": " + e.value + " app", size = 13f)
+                      }
+
+                      section("DETTAGLIO PER APP")
+                      text("Tocca un'app per aprirne la scheda.", size = 12f, color = grey)
+                      for (a in withT.take(40)) {
+                          val t = text(
+                              a.label + " (" + a.trackers.size + ")\n" +
+                                  a.trackers.sorted().joinToString("\n") { "  - $it" },
+                              size = 13f,
+                              color = if (a.trackers.size >= 5) orange else dark,
+                              pad = 8
+                          )
+                          t.setOnClickListener { openApp(a.pkg) }
+                      }
+                      if (withT.size > 40) text("… e altre " + (withT.size - 40) + " app.", size = 12f, color = grey)
+                  }
+                  text(
+                      "Un tracker non significa spionaggio: molte app gratuite li usano per pubblicità " +
+                          "e statistiche. Se un'app ne ha molti e non ti serve, valuta di disinstallarla. " +
+                          "Il rilevamento si basa sui nomi delle librerie: le app \"offuscate\" possono sfuggire.",
+                      size = 12f, color = grey, pad = 12
+                  )
+                  button("[>] Ripeti analisi") { startTrackerScan() }
+                  backButton()
+              }
+
+              // ---------- Pulizia e prestazioni ----------
+
+              private fun showCleanHome() {
+                  screen = "cleanHome"
+                  box.removeAllViews()
+                  title("PULIZIA_E_PRESTAZIONI")
+                  text(
+                      "Cerca file inutili e mostra cosa occupa spazio. Prima di eliminare qualsiasi " +
+                          "cosa vedi l'elenco e ti viene chiesta conferma. Servono due permessi " +
+                          "speciali, che concedi tu dalle impostazioni di Android.",
+                      size = 13f, color = grey
+                  )
+
+                  val allFiles = Cleaner.hasAllFiles()
+                  text(
+                      if (allFiles) "[OK] Accesso ai file: concesso" else "[NO] Accesso ai file: non concesso",
+                      color = if (allFiles) green else red, bold = true, pad = 10
+                  )
+                  if (!allFiles) {
+                      text(
+                          "Serve per trovare ed eliminare APK, file temporanei, miniature, " +
+                              "cartelle vuote e duplicati.",
+                          size = 12f, color = grey
+                      )
+                      button("[>] Concedi accesso a tutti i file") {
+                          try {
+                              startActivity(
+                                  Intent(
+                                      Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                                      Uri.parse("package:$packageName")
+                                  )
+                              )
+                          } catch (e: Exception) {
+                              openSettings(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                          }
+                      }
+                  }
+
+                  val usage = Cleaner.hasUsageAccess(this)
+                  text(
+                      if (usage) "[OK] Statistiche di utilizzo: concesse" else "[NO] Statistiche di utilizzo: non concesse",
+                      color = if (usage) green else red, bold = true, pad = 10
+                  )
+                  if (!usage) {
+                      text(
+                          "Serve per vedere la cache di ogni app e le app non usate da tempo.",
+                          size = 12f, color = grey
+                      )
+                      button("[>] Concedi accesso alle statistiche") {
+                          try {
+                              startActivity(
+                                  Intent(
+                                      Settings.ACTION_USAGE_ACCESS_SETTINGS,
+                                      Uri.parse("package:$packageName")
+                                  )
+                              )
+                          } catch (e: Exception) {
+                              openSettings(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                          }
+                      }
+                  }
+
+                  if (!allFiles && !usage) {
+                      text("Concedi almeno uno dei due permessi per iniziare.", color = grey, pad = 10)
+                  } else {
+                      button("[>] Avvia scansione") { startCleanScan() }
+                  }
+                  backButton()
+              }
+
+              private fun startCleanScan() {
+                  token++
+                  val my = token
+                  screen = "cleanScan"
+                  box.removeAllViews()
+                  title("SCANSIONE_IN_CORSO")
+                  text("Può richiedere anche un minuto se hai molti file.", color = grey)
+                  Thread {
+                      val cats = if (Cleaner.hasAllFiles()) {
+                          try {
+                              Cleaner.scanJunk()
+                          } catch (e: Exception) {
+                              null
+                          }
+                      } else {
+                          null
+                      }
+                      val sizes = if (Cleaner.hasUsageAccess(this)) {
+                          try {
+                              Cleaner.appSizes(this)
+                          } catch (e: Exception) {
+                              null
+                          }
+                      } else {
+                          null
+                      }
+                      val unused = if (sizes != null) {
+                          try {
+                              Cleaner.unusedApps(this, sizes)
+                          } catch (e: Exception) {
+                              null
+                          }
+                      } else {
+                          null
+                      }
+                      runOnUiThread {
+                          if (my == token) showCleanReport(cats, sizes, unused)
+                      }
+                  }.start()
+              }
+
+              private fun showCleanReport(
+                  cats: List<JunkCategory>?,
+                  sizes: List<AppSize>?,
+                  unused: List<UnusedApp>?
+              ) {
+                  screen = "cleanReport"
+                  box.removeAllViews()
+                  title("RISULTATO_PULIZIA")
+
+                  section("FILE INUTILI")
+                  if (cats == null) {
+                      text("Accesso a tutti i file non concesso: controllo dei file saltato.", color = grey)
+                  } else if (cats.isEmpty()) {
+                      text("[OK] Nessun file inutile trovato.", color = green)
+                  } else {
+                      val root = Environment.getExternalStorageDirectory().absolutePath
+                      text(
+                          "Spunta ciò che vuoi eliminare. Sotto ogni voce vedi alcuni esempi.",
+                          size = 12f, color = grey
+                      )
+                      for (c in cats) {
+                          val cb = CheckBox(this)
+                          cb.text = c.title + " - " + c.count + " elementi, " + fmt(c.bytes)
+                          cb.setTextColor(green)
+                          cb.setTypeface(Typeface.MONOSPACE, Typeface.BOLD)
+                          cb.textSize = 14f
+                          cb.buttonTintList = ColorStateList.valueOf(green)
+                          cb.isChecked = c.checked
+                          cb.setOnCheckedChangeListener { _, v -> c.checked = v }
+                          box.addView(cb)
+                          text(c.hint, size = 11f, color = grey, pad = 2)
+                          val all = c.files + c.dirs
+                          val preview = all.take(5).joinToString("\n") { "  " + it.absolutePath.removePrefix(root) }
+                          val more = if (c.count > 5) "\n  ... e altri " + (c.count - 5) else ""
+                          text(preview + more, size = 11f, color = grey, pad = 2)
+                      }
+                      button("[>] Elimina selezionati") { confirmDelete(cats) }
+                  }
+
+                  section("CACHE DELLE APP")
+                  if (sizes == null) {
+                      text(
+                          "Per vedere la cache delle app concedi l'accesso alle statistiche di utilizzo.",
+                          size = 13f, color = grey
+                      )
+                  } else {
+                      val totalCache = sizes.sumOf { it.cache }
+                      text("Cache totale delle app: " + fmt(totalCache), bold = true)
+                      text(
+                          "Android non permette ad altre app di svuotarla in automatico. Tocca un'app " +
+                              "per aprire la sua scheda, poi Archiviazione → Svuota cache.",
+                          size = 12f, color = grey
+                      )
+                      for (a in sizes.sortedByDescending { it.cache }.take(15)) {
+                          val t = text(
+                              a.label + " - cache " + fmt(a.cache) + ", totale " + fmt(a.total),
+                              size = 13f, pad = 7
+                          )
+                          t.setOnClickListener { openApp(a.pkg) }
+                      }
+                  }
+
+                  section("APP NON USATE DA TEMPO")
+                  if (unused == null) {
+                      text("Serve l'accesso alle statistiche di utilizzo.", size = 13f, color = grey)
+                  } else if (unused.isEmpty()) {
+                      text("[OK] Nessuna app inutilizzata da oltre 60 giorni.", color = green)
+                  } else {
+                      text(
+                          "Non risultano aperte da oltre 60 giorni. Disinstallarle libera spazio. " +
+                              "Tocca per aprire la scheda dell'app.",
+                          size = 12f, color = grey
+                      )
+                      for (u in unused) {
+                          val since = if (u.daysAgo == null) "non usata da oltre 4 mesi" else "ultimo uso " + u.daysAgo + " giorni fa"
+                          val t = text(u.label + " - " + fmt(u.total) + " (" + since + ")", size = 13f, pad = 7)
+                          t.setOnClickListener { openApp(u.pkg) }
+                      }
+                  }
+
+                  section("CRONOLOGIA BROWSER")
+                  text(
+                      "Android non permette ad altre app di cancellare la cronologia dei browser. " +
+                          "In Chrome: menu ⋮ → Elimina dati di navigazione. In Samsung Internet: " +
+                          "menu → Impostazioni → Dati personali di navigazione → Elimina.",
+                      size = 12f, color = grey
+                  )
+
+                  section("PER UN TELEFONO PIU VELOCE")
+                  text(
+                      "- Tieni libero almeno il 10-15% dello spazio.\n" +
+                          "- Disinstalla le app che non usi.\n" +
+                          "- Riavvia ogni tanto e aggiorna sistema e app.\n" +
+                          "- Diffida delle app \"booster RAM\": chiudere le app in background le fa " +
+                          "solo ripartire e consuma più batteria.",
+                      size = 12f, color = grey
+                  )
+
+                  button("[>] Ripeti scansione") { startCleanScan() }
+                  backButton()
+              }
+
+              private fun confirmDelete(cats: List<JunkCategory>) {
+                  val sel = cats.filter { it.checked }
+                  if (sel.isEmpty()) {
+                      Toast.makeText(this, "Nessuna voce selezionata.", Toast.LENGTH_SHORT).show()
+                      return
+                  }
+                  val n = sel.sumOf { it.count }
+                  val b = sel.sumOf { it.bytes }
+                  AlertDialog.Builder(this)
+                      .setTitle("Conferma eliminazione")
+                      .setMessage(
+                          "Verranno eliminati definitivamente $n elementi (" + fmt(b) +
+                              "). L'operazione non si può annullare."
+                      )
+                      .setPositiveButton("Elimina") { _, _ -> doDelete(sel) }
+                      .setNegativeButton("Annulla", null)
+                      .show()
+              }
+
+              private fun doDelete(sel: List<JunkCategory>) {
+                  token++
+                  val my = token
+                  screen = "cleanDelete"
+                  box.removeAllViews()
+                  title("ELIMINAZIONE")
+                  text("Eliminazione in corso…", size = 18f, bold = true)
+                  Thread {
+                      val res = Cleaner.delete(this, sel)
+                      runOnUiThread {
+                          if (my == token) {
+                              box.removeAllViews()
+                              title("PULIZIA_COMPLETATA")
+                              text("Spazio liberato: " + fmt(res.first), size = 20f, color = green, bold = true, pad = 8)
+                              if (res.second > 0) {
+                                  text(res.second.toString() + " file non è stato possibile eliminarli.", color = orange)
+                              }
+                              button("[>] Nuova scansione") { startCleanScan() }
+                              backButton()
+                          }
+                      }
+                  }.start()
+              }
+
+              // ---------- Scansione privacy: logica ----------
+
+              private fun loadStalker() {
+                  if (spyPk != null && spyCert != null) return
+                  val p = HashSet<String>()
+                  val c = HashSet<String>()
+                  try {
+                      assets.open("stalkerware.txt").bufferedReader().useLines { lines ->
+                          for (l in lines) {
+                              if (l.startsWith("P:")) {
+                                  p.add(l.substring(2).trim())
+                              } else if (l.startsWith("C:")) {
+                                  c.add(l.substring(2).trim().uppercase())
+                              }
+                          }
+                      }
+                  } catch (e: Exception) {
+                      // elenco non disponibile
+                  }
+                  spyPk = p
+                  spyCert = c
+              }
+
+              private fun certHashes(p: PackageInfo): List<String> {
+                  val out = ArrayList<String>()
+                  try {
+                      val si = p.signingInfo ?: return out
+                      val sigs = si.apkContentsSigners ?: return out
+                      for (s in sigs) {
+                          val d = MessageDigest.getInstance("SHA-1").digest(s.toByteArray())
+                          out.add(d.joinToString("") { "%02X".format(it) })
+                      }
+                  } catch (e: Exception) {
+                      // ignora
+                  }
+                  return out
+              }
+
+              private fun isSystem(ai: ApplicationInfo): Boolean =
+                  (ai.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+
+              private fun nameOf(pkg: String): Pair<String, Boolean> {
+                  return try {
+                      val ai = packageManager.getApplicationInfo(pkg, 0)
+                      Pair(packageManager.getApplicationLabel(ai).toString(), isSystem(ai))
+                  } catch (e: Exception) {
+                      Pair(pkg, false)
+                  }
+              }
+
+              private fun grantedPerms(p: PackageInfo): Set<String> {
+                  val req = p.requestedPermissions ?: return emptySet()
+                  val fl = p.requestedPermissionsFlags ?: return emptySet()
+                  val out = HashSet<String>()
+                  for (i in req.indices) {
+                      if (i < fl.size && (fl[i] and PackageInfo.REQUESTED_PERMISSION_GRANTED) != 0) {
+                          out.add(req[i])
+                      }
+                  }
+                  return out
+              }
+
+              private fun scan(): Report {
+                  val pm = packageManager
+                  loadStalker()
+                  val spyP = spyPk ?: emptySet<String>()
+                  val spyC = spyCert ?: emptySet<String>()
+
+                  // Servizi di accessibilità attivi
+                  val am = getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
+                  val accPk = am.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
+                      .mapNotNull { it.resolveInfo?.serviceInfo?.packageName }
+                      .toSet()
+
+                  // Amministratori del dispositivo
+                  val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+                  val admins = dpm.activeAdmins
+                  val adminPk = HashSet<String>()
+                  if (admins != null) {
+                      for (c in admins) adminPk.add(c.packageName)
+                  }
+
+                  // Lettori di notifiche
+                  val nl = Settings.Secure.getString(contentResolver, "enabled_notification_listeners") ?: ""
+                  val nlPk = nl.split(":")
+                      .mapNotNull { ComponentName.unflattenFromString(it)?.packageName }
+                      .toSet()
+
+                  // Tastiere
+                  val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                  val imePk = imm.enabledInputMethodList.map { it.packageName }.toSet()
+                  val defIme = (Settings.Secure.getString(contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD) ?: "")
+                      .substringBefore("/")
+
+                  // App installate (con permessi e firme)
+                  val flags = PackageManager.GET_PERMISSIONS or PackageManager.GET_SIGNING_CERTIFICATES
+                  val pkgs: List<PackageInfo> = if (Build.VERSION.SDK_INT >= 33) {
+                      pm.getInstalledPackages(PackageManager.PackageInfoFlags.of(flags.toLong()))
+                  } else {
+                      pm.getInstalledPackages(flags)
+                  }
+
+                  val flagged = ArrayList<AppFinding>()
+                  val spyHits = ArrayList<String>()
+                  val cam = ArrayList<String>()
+                  val mic = ArrayList<String>()
+                  var quiet = 0
+
+                  for (p in pkgs) {
+                      val ai = p.applicationInfo ?: continue
+                      if (p.packageName == packageName) continue
+
+                      val sys = isSystem(ai)
+                      val byPkg = p.packageName in spyP
+                      var byCert = false
+                      if (!sys && !byPkg && spyC.isNotEmpty()) {
+                          byCert = certHashes(p).any { it in spyC }
+                      }
+                      if (sys && !byPkg) continue
+
+                      val label = pm.getApplicationLabel(ai).toString()
+                      val granted = grantedPerms(p)
+                      val reasons = ArrayList<String>()
+                      var score = 0
+
+                      if (byPkg) {
+                          score += 10
+                          reasons.add("APP SPIA NOTA: il pacchetto è nell'elenco pubblico di stalkerware")
+                          spyHits.add(label + " (" + p.packageName + ")")
+                      }
+                      if (byCert) {
+                          score += 10
+                          reasons.add("APP SPIA NOTA: firmata con una chiave usata da stalkerware noti")
+                          spyHits.add(label + " (" + p.packageName + ")")
+                      }
+                      if (p.packageName in accPk) {
+                          score += 4
+                          reasons.add("Servizio di accessibilità attivo (può leggere lo schermo e ciò che scrivi)")
+                      }
+                      if (p.packageName in adminPk) {
+                          score += 4
+                          reasons.add("Amministratore del dispositivo (difficile da rimuovere)")
+                      }
+                      if (p.packageName in nlPk) {
+                          score += 2
+                          reasons.add("Può leggere tutte le notifiche")
+                      }
+                      if (p.packageName in imePk) {
+                          score += 1
+                          reasons.add("Tastiera di terze parti (vede ciò che scrivi)")
+                      }
+                      if (Manifest.permission.CAMERA in granted) {
+                          score += 1
+                          reasons.add("Accesso alla fotocamera")
+                          if (!sys) cam.add(label)
+                      }
+                      if (Manifest.permission.RECORD_AUDIO in granted) {
+                          score += 1
+                          reasons.add("Accesso al microfono")
+                          if (!sys) mic.add(label)
+                      }
+                      if (Manifest.permission.READ_SMS in granted) {
+                          score += 2
+                          reasons.add("Può leggere gli SMS")
+                      }
+                      if (Manifest.permission.READ_CALL_LOG in granted) {
+                          score += 2
+                          reasons.add("Può leggere il registro chiamate")
+                      }
+                      val installer = try {
+                          pm.getInstallSourceInfo(p.packageName).installingPackageName
+                      } catch (e: Exception) {
+                          null
+                      }
+                      if (!sys && (installer == null || installer !in storeInstallers)) {
+                          score += 2
+                          reasons.add("Installata fuori da un negozio ufficiale (APK manuale)")
+                      }
+
+                      if (score >= 2) {
+                          flagged.add(AppFinding(p.packageName, label, score, reasons))
+                      } else {
+                          quiet++
+                      }
+                  }
+                  flagged.sortByDescending { it.score }
+                  cam.sort()
+                  mic.sort()
+
+                  val accLines = accPk.map {
+                      val (n, sys) = nameOf(it)
+                      if (sys) "$n (app di sistema)" else "$n (app installata da te o da altri)"
+                  }
+                  val keyboardLines = imePk.map {
+                      val (n, sys) = nameOf(it)
+                      val kind = if (sys) "di sistema" else "di terze parti"
+                      val def = if (it == defIme) ", in uso" else ""
+                      "$n ($kind$def)"
+                  }
+
+                  return Report(
+                      flagged = flagged,
+                      quietCount = quiet,
+                      camApps = cam,
+                      micApps = mic,
+                      accLines = accLines,
+                      keyboardLines = keyboardLines,
+                      photoLines = scanPhotos(),
+                      bigFiles = bigFiles(),
+                      storageLine = storageLine(),
+                      spyHits = spyHits.distinct(),
+                      stalkerDbSize = spyP.size + spyC.size
+                  )
+              }
+
+              private fun hasMedia(): Boolean {
+                  val perm = if (Build.VERSION.SDK_INT >= 33) {
+                      Manifest.permission.READ_MEDIA_IMAGES
+                  } else {
+                      Manifest.permission.READ_EXTERNAL_STORAGE
+                  }
+                  return checkSelfPermission(perm) == PackageManager.PERMISSION_GRANTED
+              }
+
+              private fun scanPhotos(): List<String>? {
+                  if (!hasMedia()) return null
+                  val camPk = try {
+                      packageManager.queryIntentActivities(Intent(MediaStore.ACTION_IMAGE_CAPTURE), 0)
+                          .map { it.activityInfo.packageName }
+                          .toSet()
+                  } catch (e: Exception) {
+                      emptySet<String>()
+                  }
+                  val counts = HashMap<String, Int>()
+                  val last = HashMap<String, Long>()
+                  try {
+                      val proj = arrayOf(
+                          MediaStore.Images.Media.OWNER_PACKAGE_NAME,
+                          MediaStore.Images.Media.DATE_ADDED
+                      )
+                      val cursor = contentResolver.query(
+                          MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                          proj,
+                          null,
+                          null,
+                          MediaStore.Images.Media.DATE_ADDED + " DESC"
+                      )
+                      if (cursor != null) {
+                          cursor.use { c ->
+                              var n = 0
+                              while (c.moveToNext() && n < 20000) {
+                                  n++
+                                  val owner = c.getString(0)
+                                  if (owner == null) continue
+                                  val lower = owner.lowercase()
+                                  if (owner in camPk || lower.contains("camera") ||
+                                      lower.contains("systemui") || lower.contains("gallery") ||
+                                      lower.contains("photos")
+                                  ) continue
+                                  counts[owner] = (counts[owner] ?: 0) + 1
+                                  if (!last.containsKey(owner)) last[owner] = c.getLong(1)
+                              }
+                          }
+                      }
+                  } catch (e: Exception) {
+                      return emptyList()
+                  }
+                  return counts.entries
+                      .sortedByDescending { it.value }
+                      .take(10)
+                      .map {
+                          val (n, _) = nameOf(it.key)
+                          val d = DateFormat.format("dd/MM/yyyy HH:mm", Date((last[it.key] ?: 0L) * 1000L))
+                          "$n: ${it.value} foto, ultima il $d"
+                      }
+              }
+
+              private fun bigFiles(): List<String>? {
+                  if (!hasMedia()) return null
+                  val out = ArrayList<String>()
+                  try {
+                      val proj = arrayOf(MediaStore.MediaColumns.DISPLAY_NAME, MediaStore.MediaColumns.SIZE)
+                      val cursor = contentResolver.query(
+                          MediaStore.Files.getContentUri("external"),
+                          proj,
+                          null,
+                          null,
+                          MediaStore.MediaColumns.SIZE + " DESC"
+                      )
+                      if (cursor != null) {
+                          cursor.use { c ->
+                              var n = 0
+                              while (c.moveToNext() && n < 12) {
+                                  val name = c.getString(0) ?: "(senza nome)"
+                                  val size = c.getLong(1)
+                                  out.add(name + " — " + Formatter.formatFileSize(this, size))
+                                  n++
+                              }
+                          }
+                      }
+                  } catch (e: Exception) {
+                      // ignora
+                  }
+                  return out
+              }
+
+              private fun storageLine(): String {
+                  return try {
+                      val sf = StatFs(Environment.getDataDirectory().path)
+                      val total = sf.totalBytes
+                      val free = sf.availableBytes
+                      "Spazio libero: " + Formatter.formatFileSize(this, free) +
+                          " su " + Formatter.formatFileSize(this, total)
+                  } catch (e: Exception) {
+                      "Spazio non disponibile."
+                  }
+              }
+          }
+          EOF_PRJ
+          mkdir -p "$(dirname 'app/src/main/java/it/privacycheck/SecurityCheck.kt')"
+          cat > 'app/src/main/java/it/privacycheck/SecurityCheck.kt' <<'EOF_PRJ'
+          package it.privacycheck
+
+          import android.accessibilityservice.AccessibilityServiceInfo
+          import android.app.KeyguardManager
+          import android.app.admin.DevicePolicyManager
+          import android.content.Context
+          import android.content.pm.ApplicationInfo
+          import android.net.ConnectivityManager
+          import android.net.NetworkCapabilities
+          import android.os.Build
+          import android.provider.Settings
+          import android.view.accessibility.AccessibilityManager
+          import java.io.File
+          import java.time.LocalDate
+          import java.time.temporal.ChronoUnit
+
+          /** level: 0 = ok, 1 = info, 2 = attenzione, 3 = problema grave */
+          class Check(val level: Int, val title: String, val detail: String, val action: String?)
+
+          class SecurityResult(val score: Int, val checks: List<Check>)
+
+          @Suppress("DEPRECATION")
+          object SecurityCheck {
+
+              private val rootPaths = listOf(
+                  "/system/bin/su", "/system/xbin/su", "/sbin/su", "/su/bin/su",
+                  "/system/sbin/su", "/vendor/bin/su", "/data/local/bin/su",
+                  "/data/local/xbin/su", "/system/app/Superuser.apk"
+              )
+
+              private val rootPackages = listOf(
+                  "com.topjohnwu.magisk", "eu.chainfire.supersu", "com.noshufou.android.su",
+                  "com.koushikdutta.superuser", "com.thirdparty.superuser"
+              )
+
+              fun run(ctx: Context): SecurityResult {
+                  val out = ArrayList<Check>()
+                  var penalty = 0
+                  val cr = ctx.contentResolver
+
+                  // Blocco schermo
+                  val km = ctx.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+                  if (km.isDeviceSecure) {
+                      out.add(Check(0, "Blocco schermo", "PIN, password o sequenza attivi.", null))
+                  } else {
+                      penalty += 25
+                      out.add(
+                          Check(
+                              3, "Blocco schermo ASSENTE",
+                              "Chiunque abbia il telefono in mano può leggere tutto. Imposta un PIN.",
+                              Settings.ACTION_SECURITY_SETTINGS
+                          )
+                      )
+                  }
+
+                  // Versione Android
+                  val ver = "Android " + Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")"
+                  if (Build.VERSION.SDK_INT < 31) {
+                      penalty += 10
+                      out.add(
+                          Check(
+                              2, "Sistema operativo datato",
+                              ver + ": non riceve più aggiornamenti di sicurezza dal produttore.",
+                              Settings.ACTION_DEVICE_INFO_SETTINGS
+                          )
+                      )
+                  } else {
+                      out.add(Check(0, "Versione di Android", ver, null))
+                  }
+
+                  // Patch di sicurezza
+                  try {
+                      val patch = Build.VERSION.SECURITY_PATCH
+                      val days = ChronoUnit.DAYS.between(LocalDate.parse(patch), LocalDate.now())
+                      val d = "Patch del $patch ($days giorni fa)."
+                      if (days <= 120) {
+                          out.add(Check(0, "Aggiornamento di sicurezza", d, null))
+                      } else if (days <= 240) {
+                          penalty += 10
+                          out.add(
+                              Check(
+                                  2, "Aggiornamento di sicurezza non recente", d + " Cerca aggiornamenti.",
+                                  "android.settings.SYSTEM_UPDATE_SETTINGS"
+                              )
+                          )
+                      } else {
+                          penalty += 20
+                          out.add(
+                              Check(
+                                  3, "Aggiornamento di sicurezza MOLTO vecchio", d + " Aggiorna il sistema.",
+                                  "android.settings.SYSTEM_UPDATE_SETTINGS"
+                              )
+                          )
+                      }
+                  } catch (e: Exception) {
+                      out.add(Check(1, "Aggiornamento di sicurezza", "Data non leggibile.", null))
+                  }
+
+                  // Crittografia
+                  try {
+                      val dpm = ctx.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+                      val st = dpm.storageEncryptionStatus
+                      if (st == DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE ||
+                          st == DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE_PER_USER ||
+                          st == DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE_DEFAULT_KEY
+                      ) {
+                          out.add(Check(0, "Crittografia dei dati", "Memoria cifrata.", null))
+                      } else {
+                          penalty += 15
+                          out.add(
+                              Check(
+                                  3, "Memoria NON cifrata", "I dati sono leggibili se il telefono viene smontato.",
+                                  Settings.ACTION_SECURITY_SETTINGS
+                              )
+                          )
+                      }
+                  } catch (e: Exception) {
+                      out.add(Check(1, "Crittografia dei dati", "Stato non leggibile.", null))
+                  }
+
+                  // Debug USB e opzioni sviluppatore
+                  val adb = Settings.Global.getInt(cr, Settings.Global.ADB_ENABLED, 0) == 1
+                  val dev = Settings.Global.getInt(cr, Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0) == 1
+                  if (adb) {
+                      penalty += 10
+                      out.add(
+                          Check(
+                              2, "Debug USB attivo",
+                              "Un computer collegato col cavo potrebbe accedere al telefono. Disattivalo se non lo usi.",
+                              Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS
+                          )
+                      )
+                  } else if (dev) {
+                      penalty += 3
+                      out.add(
+                          Check(
+                              1, "Opzioni sviluppatore attive", "Il debug USB è spento. Puoi disattivarle.",
+                              Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS
+                          )
+                      )
+                  } else {
+                      out.add(Check(0, "Debug USB", "Spento.", null))
+                  }
+
+                  // DNS privato
+                  val dns = Settings.Global.getString(cr, "private_dns_mode") ?: "opportunistic"
+                  if (dns == "off") {
+                      penalty += 5
+                      out.add(
+                          Check(
+                              2, "DNS privato disattivato",
+                              "Le richieste DNS viaggiano in chiaro. Attivalo in Rete e Internet → DNS privato.",
+                              Settings.ACTION_WIRELESS_SETTINGS
+                          )
+                      )
+                  } else {
+                      out.add(Check(0, "DNS privato", "Modalità: $dns.", null))
+                  }
+
+                  // VPN
+                  try {
+                      val cm = ctx.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+                      val caps = cm.getNetworkCapabilities(cm.activeNetwork)
+                      val vpn = caps != null && caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
+                      out.add(Check(1, "VPN", if (vpn) "Una VPN è attiva ora." else "Nessuna VPN attiva ora.", null))
+                  } catch (e: Exception) {
+                      // ignora
+                  }
+
+                  // Root
+                  var rootSigns = 0
+                  for (p in rootPaths) if (File(p).exists()) rootSigns++
+                  if (Build.TAGS != null && Build.TAGS.contains("test-keys")) rootSigns++
+                  for (p in rootPackages) {
+                      try {
+                          ctx.packageManager.getPackageInfo(p, 0)
+                          rootSigns++
+                      } catch (e: Exception) {
+                          // non installato
+                      }
+                  }
+                  if (rootSigns > 0) {
+                      penalty += 25
+                      out.add(
+                          Check(
+                              3, "Segnali di ROOT",
+                              "Trovati $rootSigns indizi di accesso root o firmware non ufficiale: la sicurezza di Android è indebolita.",
+                              null
+                          )
+                      )
+                  } else {
+                      out.add(Check(0, "Root", "Nessun indizio di root.", null))
+                  }
+
+                  // Timeout schermo
+                  val to = Settings.System.getInt(cr, Settings.System.SCREEN_OFF_TIMEOUT, 60000)
+                  if (to > 120000) {
+                      penalty += 3
+                      out.add(
+                          Check(
+                              2, "Spegnimento schermo lento", "Lo schermo resta acceso " + (to / 1000) + " secondi. Meglio 30-60.",
+                              Settings.ACTION_DISPLAY_SETTINGS
+                          )
+                      )
+                  } else {
+                      out.add(Check(0, "Spegnimento schermo", "" + (to / 1000) + " secondi.", null))
+                  }
+
+                  // Accessibilità di terze parti
+                  try {
+                      val am = ctx.getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
+                      var third = 0
+                      val names = ArrayList<String>()
+                      for (s in am.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK)) {
+                          val pkg = s.resolveInfo?.serviceInfo?.packageName ?: continue
+                          try {
+                              val ai = ctx.packageManager.getApplicationInfo(pkg, 0)
+                              if ((ai.flags and ApplicationInfo.FLAG_SYSTEM) == 0) {
+                                  third++
+                                  names.add(ctx.packageManager.getApplicationLabel(ai).toString())
+                              }
+                          } catch (e: Exception) {
+                              // ignora
+                          }
+                      }
+                      if (third > 0) {
+                          penalty += 5
+                          out.add(
+                              Check(
+                                  2, "Accessibilità: $third app non di sistema",
+                                  names.joinToString(", ") + ". Possono leggere lo schermo: verifica che le riconosci.",
+                                  Settings.ACTION_ACCESSIBILITY_SETTINGS
+                              )
+                          )
+                      } else {
+                          out.add(Check(0, "Servizi di accessibilità", "Nessuna app di terze parti.", null))
+                      }
+                  } catch (e: Exception) {
+                      // ignora
+                  }
+
+                  val score = if (penalty >= 100) 0 else 100 - penalty
+                  return SecurityResult(score, out)
+              }
+          }
+          EOF_PRJ
+          mkdir -p "$(dirname 'app/src/main/java/it/privacycheck/Trackers.kt')"
+          cat > 'app/src/main/java/it/privacycheck/Trackers.kt' <<'EOF_PRJ'
+          package it.privacycheck
+
+          import android.content.Context
+          import android.content.pm.ApplicationInfo
+          import java.util.zip.ZipFile
+
+          class AppTrackers(val pkg: String, val label: String, val trackers: Set<String>)
+
+          class TrackerResult(val analyzed: Int, val apps: List<AppTrackers>)
+
+          private class Node {
+              val next = arrayOfNulls<Node>(128)
+              var name: String? = null
+          }
+
+          /**
+           * Cerca nel codice (file classes*.dex) delle app installate i nomi delle librerie
+           * pubblicitarie e di tracciamento più diffuse. Funziona interamente offline.
+           */
+          @Suppress("DEPRECATION")
+          object Trackers {
+
+              private val list = listOf(
+                  "Google Analytics" to "com/google/android/gms/analytics/",
+                  "Google Tag Manager" to "com/google/android/gms/tagmanager/",
+                  "Firebase Analytics" to "com/google/firebase/analytics/",
+                  "Google AdMob / Ads" to "com/google/android/gms/ads/",
+                  "Firebase Crashlytics" to "com/google/firebase/crashlytics/",
+                  "Crashlytics (Fabric)" to "com/crashlytics/android/",
+                  "Facebook Ads" to "com/facebook/ads/",
+                  "Facebook Analytics" to "com/facebook/appevents/",
+                  "Facebook SDK" to "com/facebook/FacebookSdk",
+                  "Flurry" to "com/flurry/",
+                  "AppsFlyer" to "com/appsflyer/",
+                  "Adjust" to "com/adjust/sdk/",
+                  "Branch" to "io/branch/",
+                  "Mixpanel" to "com/mixpanel/",
+                  "Amplitude" to "com/amplitude/",
+                  "Segment" to "com/segment/analytics/",
+                  "OneSignal" to "com/onesignal/",
+                  "Unity Ads" to "com/unity3d/ads/",
+                  "AppLovin" to "com/applovin/",
+                  "ironSource" to "com/ironsource/",
+                  "Vungle" to "com/vungle/",
+                  "Chartboost" to "com/chartboost/",
+                  "InMobi" to "com/inmobi/",
+                  "MoPub" to "com/mopub/",
+                  "StartApp" to "com/startapp/",
+                  "Tapjoy" to "com/tapjoy/",
+                  "Pangle (TikTok Ads)" to "com/bytedance/sdk/openadsdk/",
+                  "Kochava" to "com/kochava/",
+                  "Singular" to "com/singular/sdk/",
+                  "Braze (Appboy)" to "com/appboy/",
+                  "Braze" to "com/braze/",
+                  "Urban Airship" to "com/urbanairship/",
+                  "MoEngage" to "com/moengage/",
+                  "CleverTap" to "com/clevertap/",
+                  "Yandex Metrica" to "com/yandex/metrica/",
+                  "myTracker (VK)" to "com/my/tracker/",
+                  "Smaato" to "com/smaato/",
+                  "Fyber" to "com/fyber/",
+                  "AdColony" to "com/adcolony/",
+                  "Criteo" to "com/criteo/",
+                  "Taboola" to "com/taboola/",
+                  "Outbrain" to "com/outbrain/",
+                  "comScore" to "com/comscore/",
+                  "Huawei Analytics" to "com/huawei/hms/analytics/",
+                  "Huawei Ads" to "com/huawei/hms/ads/",
+                  "Microsoft AppCenter" to "com/microsoft/appcenter/",
+                  "Bugsnag" to "com/bugsnag/",
+                  "Adobe Analytics" to "com/adobe/mobile/",
+                  "Tune" to "com/tune/",
+                  "Leanplum" to "com/leanplum/",
+                  "Optimizely" to "com/optimizely/"
+              )
+
+              private val root: Node = buildTrie()
+
+              private fun buildTrie(): Node {
+                  val r = Node()
+                  for ((name, prefix) in list) {
+                      var n = r
+                      for (ch in prefix) {
+                          val c = ch.code
+                          if (c >= 128) continue
+                          var nx = n.next[c]
+                          if (nx == null) {
+                              nx = Node()
+                              n.next[c] = nx
+                          }
+                          n = nx
+                      }
+                      n.name = name
+                  }
+                  return r
+              }
+
+              private fun scanBytes(buf: ByteArray, found: MutableSet<String>) {
+                  val big = 'L'.code.toByte()
+                  val n = buf.size
+                  var i = 0
+                  while (i < n) {
+                      if (buf[i] == big) {
+                          var node = root
+                          var j = i + 1
+                          while (j < n) {
+                              val b = buf[j].toInt()
+                              if (b < 0) break
+                              val nx = node.next[b] ?: break
+                              node = nx
+                              val nm = node.name
+                              if (nm != null) {
+                                  found.add(nm)
+                                  break
+                              }
+                              j++
+                          }
+                      }
+                      i++
+                  }
+              }
+
+              private fun scanApk(path: String): Set<String> {
+                  val found = HashSet<String>()
+                  try {
+                      ZipFile(path).use { zf ->
+                          val en = zf.entries()
+                          while (en.hasMoreElements()) {
+                              val e = en.nextElement()
+                              val nm = e.name
+                              if (nm.startsWith("classes") && nm.endsWith(".dex") && e.size in 1L..60000000L) {
+                                  val data = zf.getInputStream(e).use { it.readBytes() }
+                                  scanBytes(data, found)
+                              }
+                          }
+                      }
+                  } catch (e: Exception) {
+                      // APK non leggibile
+                  }
+                  return found
+              }
+
+              fun scanAll(ctx: Context, progress: (Int, Int) -> Unit): TrackerResult {
+                  val pm = ctx.packageManager
+                  val apps = pm.getInstalledApplications(0).filter {
+                      (it.flags and ApplicationInfo.FLAG_SYSTEM) == 0 && it.packageName != ctx.packageName
+                  }
+                  val out = ArrayList<AppTrackers>()
+                  var done = 0
+                  for (ai in apps) {
+                      val found = scanApk(ai.sourceDir)
+                      out.add(AppTrackers(ai.packageName, pm.getApplicationLabel(ai).toString(), found))
+                      done++
+                      progress(done, apps.size)
+                  }
+                  return TrackerResult(apps.size, out)
+              }
+          }
+          EOF_PRJ
+          mkdir -p "$(dirname 'app/src/main/res/drawable/ic_bg.xml')"
+          cat > 'app/src/main/res/drawable/ic_bg.xml' <<'EOF_PRJ'
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"
+              android:shape="rectangle">
+              <solid android:color="#000000" />
+          </shape>
+          EOF_PRJ
+          mkdir -p "$(dirname 'app/src/main/res/drawable/ic_fg.xml')"
+          cat > 'app/src/main/res/drawable/ic_fg.xml' <<'EOF_PRJ'
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="108dp"
+              android:height="108dp"
+              android:viewportWidth="108"
+              android:viewportHeight="108">
+              <path
+                  android:fillColor="#00000000"
+                  android:pathData="M38,40 L54,54 L38,68"
+                  android:strokeColor="#00FF41"
+                  android:strokeLineCap="round"
+                  android:strokeLineJoin="round"
+                  android:strokeWidth="6" />
+              <path
+                  android:fillColor="#00000000"
+                  android:pathData="M58,70 L72,70"
+                  android:strokeColor="#00FF41"
+                  android:strokeLineCap="round"
+                  android:strokeWidth="6" />
+          </vector>
+          EOF_PRJ
+          mkdir -p "$(dirname 'app/src/main/res/mipmap-anydpi/ic_launcher.xml')"
+          cat > 'app/src/main/res/mipmap-anydpi/ic_launcher.xml' <<'EOF_PRJ'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@drawable/ic_bg" />
+              <foreground android:drawable="@drawable/ic_fg" />
+          </adaptive-icon>
+          EOF_PRJ
+          mkdir -p "$(dirname 'build.gradle.kts')"
+          cat > 'build.gradle.kts' <<'EOF_PRJ'
+          plugins {
+              id("com.android.application") version "8.5.2" apply false
+              id("org.jetbrains.kotlin.android") version "1.9.24" apply false
+          }
+          EOF_PRJ
+          mkdir -p "$(dirname 'gradle.properties')"
+          cat > 'gradle.properties' <<'EOF_PRJ'
+          org.gradle.jvmargs=-Xmx3g -Dfile.encoding=UTF-8
+          kotlin.code.style=official
+          android.nonTransitiveRClass=true
+          EOF_PRJ
+          mkdir -p "$(dirname 'settings.gradle.kts')"
+          cat > 'settings.gradle.kts' <<'EOF_PRJ'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "ControlloPrivacy"
+          include(":app")
+          EOF_PRJ
+
+      - name: Compila
+        run: gradle assembleDebug --no-daemon --stacktrace
+
+      - name: Pubblica l'APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-${{ github.run_number }}
+          name: Controllo Privacy v3.0 (build ${{ github.run_number }})
+          files: app/build/outputs/apk/debug/app-debug.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ControlloPrivacy-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
