@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="widget_desc">Stato di sicurezza del telefono: app spia, accessibilità e amministratori.</string>
+    <string name="widget_small_desc">Tessera piccola come un\'icona: mostra OK, !! o XX. Toccala per aprire l\'app.</string>
+    <string name="widget_label_small">GhostALO (icona piccola)</string>
+    <string name="widget_label_big">GhostALO (esteso)</string>
 </resources>

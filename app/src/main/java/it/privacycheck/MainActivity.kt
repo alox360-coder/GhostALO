@@ -245,12 +245,12 @@ class MainActivity : Activity() {
         screen = "intro"
         box.removeAllViews()
         text("> GhostALO_", size = 26f, color = green, bold = true, pad = 4)
-        text(tr("Versione") + " 4.4", size = 12f, color = grey, pad = 1)
+        text(tr("Versione") + " 4.6", size = 12f, color = grey, pad = 1)
         text(tr("Nessun accesso a Internet: i dati restano nel telefono."), size = 12f, color = grey, pad = 1)
         sep()
         button(tr("[>] CONTROLLO RAPIDO\n     un tocco: dice se è tutto a posto")) { startQuick() }
         text(tr("Oppure scegli un'area:"), size = 12f, color = grey, pad = 8)
-        button(tr("[S] Sicurezza\n     dispositivo, app spia, app nascoste, APK")) { showGroup("sec") }
+        button(tr("[S] Sicurezza\n     dispositivo, app spia, APK")) { showGroup("sec") }
         button(tr("[P] Privacy\n     permessi, tracker, rete, profili")) { showGroup("priv") }
         button(tr("[C] Pulizia e prestazioni\n     file inutili, chat, spazio, batteria")) { showGroup("clean") }
         button(tr("[T] Strumenti\n     avvisi in background, widget")) { showGroup("tools") }
@@ -779,7 +779,7 @@ class MainActivity : Activity() {
 
         section("WIDGET")
         text(
-            tr("Tieni premuto su uno spazio vuoto della schermata Home, scegli Widget e cerca \"GhostALO\". Mostra lo stato (OK, da verificare, app spia) e il tasto [R] per aggiornarlo. Toccando il widget si apre l'app."),
+            tr("Per mettere una tessera piccola sulla Home: tieni premuto su uno spazio vuoto, scegli Widget e cerca \"GhostALO (icona piccola)\": occupa un solo riquadro e mostra OK, !! o XX. La versione \"esteso\" mostra più dettagli e il tasto [R]. L'icona normale dell'app si trascina dal menu delle app."),
             size = 13f, color = dark
         )
         backButton()
@@ -2035,7 +2035,7 @@ class MainActivity : Activity() {
                 reasons.add(tr("Installata fuori da un negozio ufficiale (APK manuale)"))
             }
 
-            if (score >= 2) {
+            if (score >= 3) {
                 flagged.add(AppFinding(p.packageName, label, score, reasons))
             } else {
                 quiet++

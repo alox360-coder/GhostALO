@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="widget_desc">Phone security status: spy apps, accessibility and administrators.</string>
+    <string name="widget_small_desc">Small icon-like tile: shows OK, !! or XX. Tap to open the app.</string>
+    <string name="widget_label_small">GhostALO (small icon)</string>
+    <string name="widget_label_big">GhostALO (extended)</string>
 </resources>

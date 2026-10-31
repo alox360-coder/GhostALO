@@ -276,7 +276,6 @@
 "TASTIERE ABILITATE": "ENABLED KEYBOARDS",
 "TRACKER PIU DIFFUSI": "MOST COMMON TRACKERS",
 "Tastiera di terze parti (vede ciò che scrivi)": "Third-party keyboard (sees what you type)",
-"Tieni premuto su uno spazio vuoto della schermata Home, scegli Widget e cerca \"GhostALO\". Mostra lo stato (OK, da verificare, app spia) e il tasto [R] per aggiornarlo. Toccando il widget si apre l'app.": "Long-press an empty spot on the Home screen, choose Widgets and look for \"GhostALO\". It shows the status (OK, to check, spy app) and the [R] button to refresh it. Tapping the widget opens the app.",
 "Tocca l'app nell'elenco qui sotto per aprirne la scheda e disinstallarla. ATTENZIONE: se sospetti che l'abbia installata un partner o un familiare violento, rimuoverla potrebbe avvisarlo. Valuta prima di contattare un centro antiviolenza (in Italia: 1522, gratuito e attivo 24 ore su 24).": "Tap the app in the list below to open its page and uninstall it. WARNING: if you suspect it was installed by a violent partner or relative, removing it might alert them. Consider contacting a domestic-violence support center first (in Italy: 1522, free and open 24 hours a day).",
 "Tocca un'app per aprire la sua scheda.": "Tap an app to open its page.",
 "Tocca un'app per aprire la sua scheda. Se non la riconosci, controlla da dove viene e valuta di disinstallarla.": "Tap an app to open its page. If you do not recognize it, check where it comes from and consider uninstalling it.",
@@ -361,7 +360,6 @@
 "[OK] Statistiche di utilizzo: concesse": "[OK] Usage statistics: granted",
 "[OK] TUTTO A POSTO": "[OK] ALL GOOD",
 "[P] Privacy\n     permessi, tracker, rete, profili": "[P] Privacy\n     permissions, trackers, network, profiles",
-"[S] Sicurezza\n     dispositivo, app spia, app nascoste, APK": "[S] Security\n     device, spy apps, hidden apps, APKs",
 "[T] Strumenti\n     avvisi in background, widget": "[T] Tools\n     background alerts, widget",
 "[XX] APP SPIA NOTE RILEVATE: ": "[XX] KNOWN SPY APPS DETECTED: ",
 "[XX] PROBLEMI DA RISOLVERE (": "[XX] PROBLEMS TO FIX (",
@@ -481,5 +479,7 @@
 "Nuovo servizio di accessibilità": "New accessibility service",
 "Se vedi questo messaggio, le notifiche funzionano.": "If you see this message, notifications work.",
 "… e altri ": "… and others: ",
-"Versione": "Version"
+"Versione": "Version",
+"[S] Sicurezza\n     dispositivo, app spia, APK": "[S] Security\n     device, spy apps, APKs",
+"Per mettere una tessera piccola sulla Home: tieni premuto su uno spazio vuoto, scegli Widget e cerca \"GhostALO (icona piccola)\": occupa un solo riquadro e mostra OK, !! o XX. La versione \"esteso\" mostra più dettagli e il tasto [R]. L'icona normale dell'app si trascina dal menu delle app.": "To put a small tile on the Home screen: long-press an empty spot, choose Widgets and look for \"GhostALO (small icon)\": it takes a single square and shows OK, !! or XX. The \"extended\" version shows more details and the [R] button. The normal app icon can be dragged from the app drawer."
 }

@@ -40,8 +40,21 @@
             android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <receiver
+            android:name=".StatusWidgetSmall"
+            android:exported="false"
+            android:label="@string/widget_label_small">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/status_widget_small_info" />
+        </receiver>
+
+        <receiver
             android:name=".StatusWidget"
-            android:exported="false">
+            android:exported="false"
+            android:label="@string/widget_label_big">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>

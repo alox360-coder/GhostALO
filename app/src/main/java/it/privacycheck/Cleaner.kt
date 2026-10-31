@@ -128,6 +128,7 @@ object Cleaner {
                 } else if (e.isFile) {
                     val len = e.length()
                     val lower = e.name.lowercase()
+                    if (lower == ".nomedia") continue
                     val ext = lower.substringAfterLast('.', "")
                     if (cur.thumbs || lower.startsWith(".thumbdata")) {
                         thumbs.files.add(e)
@@ -166,7 +167,7 @@ object Cleaner {
             }
         }
 
-        return listOf(apk, temp, thumbs, empty, dup).filter { it.count > 0 }
+        return listOf(apk, temp, thumbs, empty, dup).filter { it.count > 0 && (it.bytes > 0L || it.dirs.isNotEmpty()) }
     }
 
     /** Elimina i file delle categorie. Restituisce (byte liberati, file non eliminati). */

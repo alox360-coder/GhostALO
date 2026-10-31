@@ -214,7 +214,7 @@ object SecurityCheck {
             penalty += 3
             out.add(
                 Check(
-                    2, tr("Spegnimento schermo lento"), tr("Lo schermo resta acceso ") + (to / 1000) + tr(" secondi. Meglio 30-60."),
+                    1, tr("Spegnimento schermo lento"), tr("Lo schermo resta acceso ") + (to / 1000) + tr(" secondi. Meglio 30-60."),
                     Settings.ACTION_DISPLAY_SETTINGS
                 )
             )

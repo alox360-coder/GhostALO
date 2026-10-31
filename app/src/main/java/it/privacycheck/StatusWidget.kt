@@ -50,9 +50,43 @@ class StatusWidget : AppWidgetProvider() {
                 val mgr = AppWidgetManager.getInstance(ctx)
                 val ids = mgr.getAppWidgetIds(ComponentName(ctx, StatusWidget::class.java))
                 for (id in ids) mgr.updateAppWidget(id, build(ctx))
+                val small = mgr.getAppWidgetIds(ComponentName(ctx, StatusWidgetSmall::class.java))
+                for (id in small) mgr.updateAppWidget(id, buildSmall(ctx))
             } catch (e: Exception) {
                 // ignora
             }
+        }
+
+        /** Tessera piccola, come un'icona: solo il codice di stato (OK, !!, XX, ??). */
+        fun buildSmall(ctx: Context): RemoteViews {
+            val rv = RemoteViews(ctx.packageName, R.layout.widget_small)
+            val pr = Watch.prefs(ctx)
+            val t = pr.getLong("st_time", 0L)
+            val spy = pr.getInt("st_spy", 0)
+            val others = pr.getInt("st_acc", 0) + pr.getInt("st_adm", 0) + pr.getInt("st_risk", 0)
+            val code: String
+            val color: Int
+            if (t == 0L) {
+                code = "??"
+                color = grey
+            } else if (spy > 0) {
+                code = "XX"
+                color = red
+            } else if (others > 0) {
+                code = "!!"
+                color = orange
+            } else {
+                code = "OK"
+                color = green
+            }
+            rv.setTextViewText(R.id.w_state, code)
+            rv.setTextColor(R.id.w_state, color)
+            val open = PendingIntent.getActivity(
+                ctx, 2, Intent(ctx, MainActivity::class.java),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+            rv.setOnClickPendingIntent(R.id.w_root, open)
+            return rv
         }
 
         fun build(ctx: Context): RemoteViews {

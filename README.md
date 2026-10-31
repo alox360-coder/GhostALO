@@ -16,7 +16,7 @@ App Android in stile terminale (verde su nero) per controllare la privacy del te
 - **Permessi: chi usa cosa**: per ogni permesso (fotocamera, microfono, posizione, SMS…) le app che lo hanno, con collegamento alla loro scheda.
 - **Controllo degli APK scaricati**: controlla i file .apk prima dell'installazione (app spia note, firma diversa, permessi sensibili).
 - **Avvisi in background**: ogni 30 minuti circa controlla in silenzio e manda una notifica se compare un'app spia nota, un nuovo servizio di accessibilità, un nuovo amministratore del dispositivo, un nuovo lettore di notifiche o un'app installata da APK con permessi sensibili.
-- **Widget** per la schermata Home con lo stato di sicurezza e un tasto per aggiornarlo.
+- **Widget** per la schermata Home: una tessera piccola (1x1, come un'icona) con OK, !! o XX e una versione estesa con i dettagli.
 
 ## Privacy
 
