@@ -11,6 +11,8 @@ import android.os.Process
 import android.os.storage.StorageManager
 import java.io.File
 import java.io.FileInputStream
+import java.io.FileOutputStream
+import android.os.StatFs
 import java.security.MessageDigest
 
 class JunkCategory(val title: String, val hint: String, var checked: Boolean) {
@@ -21,6 +23,15 @@ class JunkCategory(val title: String, val hint: String, var checked: Boolean) {
 }
 
 data class AppSize(val pkg: String, val label: String, val cache: Long, val total: Long)
+
+class CacheResult(
+    val ok: Boolean,
+    val freeBefore: Long,
+    val freeAfter: Long,
+    val cacheBefore: Long?,
+    val cacheAfter: Long?,
+    val message: String
+)
 
 data class UnusedApp(val pkg: String, val label: String, val total: Long, val daysAgo: Int?)
 
@@ -41,6 +52,11 @@ object Cleaner {
             Process.myUid(),
             ctx.packageName
         )
+        if (mode == AppOpsManager.MODE_DEFAULT) {
+            // Su alcuni telefoni il permesso risulta "predefinito": conta quello di sistema.
+            return ctx.checkCallingOrSelfPermission(android.Manifest.permission.PACKAGE_USAGE_STATS) ==
+                android.content.pm.PackageManager.PERMISSION_GRANTED
+        }
         return mode == AppOpsManager.MODE_ALLOWED
     }
 
@@ -64,28 +80,28 @@ object Cleaner {
     /** Cerca file inutili nell'archivio condiviso. Non modifica nulla. */
     fun scanJunk(): List<JunkCategory> {
         val apk = JunkCategory(
-            "Installer APK",
-            "File .apk già scaricati: dopo l'installazione non servono più.",
+            tr("Installer APK"),
+            tr("File .apk già scaricati: dopo l'installazione non servono più."),
             true
         )
         val temp = JunkCategory(
-            "File temporanei e di log",
-            "File .tmp, .temp, .log, .dmp, .chk lasciati da app e sistema.",
+            tr("File temporanei e di log"),
+            tr("File .tmp, .temp, .log, .dmp, .chk lasciati da app e sistema."),
             true
         )
         val thumbs = JunkCategory(
-            "Miniature in cache",
-            "Cartelle .thumbnails e file .thumbdata: Android le ricrea se servono.",
+            tr("Miniature in cache"),
+            tr("Cartelle .thumbnails e file .thumbdata: Android le ricrea se servono."),
             true
         )
         val empty = JunkCategory(
-            "Cartelle vuote",
-            "Cartelle senza alcun file (le cartelle principali come DCIM non vengono toccate).",
+            tr("Cartelle vuote"),
+            tr("Cartelle senza alcun file (le cartelle principali come DCIM non vengono toccate)."),
             true
         )
         val dup = JunkCategory(
-            "File duplicati",
-            "Copie identiche di foto, video e documenti: viene tenuto l'esemplare più vecchio.",
+            tr("File duplicati"),
+            tr("Copie identiche di foto, video e documenti: viene tenuto l'esemplare più vecchio."),
             false
         )
 
@@ -96,6 +112,7 @@ object Cleaner {
         var visited = 0
 
         while (stack.isNotEmpty() && visited < 300000) {
+            Work.check()
             val cur = stack.removeAt(stack.size - 1)
             val entries = cur.dir.listFiles() ?: continue
             if (entries.isEmpty() && cur.depth >= 2) {
@@ -131,9 +148,11 @@ object Cleaner {
         // Duplicati: stessa dimensione, poi stesso contenuto (SHA-1)
         val bySize = candidates.groupBy { it.length() }
         for ((size, group) in bySize) {
+            Work.check()
             if (group.size < 2 || size > 200L * 1024L * 1024L) continue
             val byHash = HashMap<String, MutableList<File>>()
             for (f in group) {
+                Work.check()
                 val h = hash(f) ?: continue
                 byHash.getOrPut(h) { ArrayList() }.add(f)
             }
@@ -178,6 +197,55 @@ object Cleaner {
             }
         }
         return Pair(freed, failed)
+    }
+
+    /**
+     * Chiede ad Android di fare spazio: per soddisfare la richiesta il sistema cancella
+     * da solo le cache delle altre app (metodo ufficiale, StorageManager.allocateBytes).
+     * Non svuota "tutto": libera quanto basta per la richiesta, e dipende dal telefono.
+     */
+    fun freeSystemCache(ctx: Context): CacheResult {
+        val sm = ctx.getSystemService(Context.STORAGE_SERVICE) as StorageManager
+        val dir = ctx.filesDir
+        val usage = hasUsageAccess(ctx)
+        fun others(): Long? = if (usage) {
+            try {
+                appSizes(ctx).filter { it.pkg != ctx.packageName }.sumOf { it.cache }
+            } catch (e: Exception) {
+                null
+            }
+        } else {
+            null
+        }
+
+        return try {
+            val uuid = sm.getUuidForPath(dir)
+            val cacheBefore = others()
+            val freeBefore = StatFs(dir.path).availableBytes
+            val extra = (sm.getAllocatableBytes(uuid) - freeBefore).coerceAtLeast(0L)
+            if (extra < 1024L * 1024L) {
+                return CacheResult(
+                    true, freeBefore, freeBefore, cacheBefore, cacheBefore,
+                    tr("Android non segnala cache da liberare in questo momento.")
+                )
+            }
+            val request = if (cacheBefore != null) minOf(extra, cacheBefore) else extra / 2
+            val f = File(dir, "spazio.tmp")
+            try {
+                FileOutputStream(f).use { out -> sm.allocateBytes(out.fd, freeBefore + request) }
+            } finally {
+                f.delete()
+            }
+            try {
+                Thread.sleep(1500)
+            } catch (e: InterruptedException) {
+                // ignora
+            }
+            val freeAfter = StatFs(dir.path).availableBytes
+            CacheResult(true, freeBefore, freeAfter, cacheBefore, others(), "")
+        } catch (e: Exception) {
+            CacheResult(false, 0L, 0L, null, null, tr("Il sistema ha rifiutato la richiesta."))
+        }
     }
 
     /** Dimensioni e cache di ogni app. Richiede l'accesso alle statistiche di utilizzo. */

@@ -148,6 +148,7 @@ object Trackers {
         val out = ArrayList<AppTrackers>()
         var done = 0
         for (ai in apps) {
+            Work.check()
             val found = scanApk(ai.sourceDir)
             out.add(AppTrackers(ai.packageName, pm.getApplicationLabel(ai).toString(), found))
             done++

@@ -1,13 +1,26 @@
-# Controllo Privacy
+# GhostALO
 
 App Android in stile terminale (verde su nero) per controllare la privacy del telefono e fare pulizia.
 
+- **Controllo rapido**: un tocco per sapere se è tutto a posto, con le voci da verificare. Il menu è diviso in Sicurezza, Privacy, Pulizia e Strumenti.
 - **Sicurezza del dispositivo**: punteggio su 100 (blocco schermo, cifratura, aggiornamenti, debug USB, DNS privato, root, accessibilità…).
 - **Scansione privacy + app spia**: confronta le app installate con l'elenco pubblico di stalkerware noti (nomi di pacchetto e firme) e segnala permessi e servizi a rischio.
 - **Rilevatore di tracker**: cerca nel codice delle app le librerie pubblicitarie e di tracciamento più note.
-- **Pulizia**: APK già scaricati, file temporanei, miniature, cartelle vuote, duplicati, cache e app non usate da tempo. Ogni eliminazione richiede conferma.
+- **Pulizia**: APK già scaricati, file temporanei, miniature, cartelle vuote, duplicati, cache e app non usate da tempo. Ogni eliminazione richiede conferma. Il pulsante "Libera cache di sistema" chiede ad Android di fare spazio cancellando le cache delle altre app (il risultato dipende dal telefono).
+- **Pulizia WhatsApp e Telegram**: media ricevuti vecchi, note vocali, copie dei file inviati e stati già visti, con soglia a scelta (30-365 giorni). Le chat non vengono toccate; ogni eliminazione richiede conferma.
+- **Analisi dello spazio per tipo**: foto, video, audio, documenti, archivi e app con barre in stile terminale, più i file più grandi.
+- **App in background**: quali app hanno tenuto attivo un servizio in primo piano e per quanto, confrontato con l uso reale; collegamenti alle impostazioni di batteria di Android.
+- **App senza icona e cartelle nascoste**: elenca le app installate senza icona nel menu (con permessi e servizi) e le cartelle nascoste con foto o video. Solo indizi.
+- **Spazio privato e profili**: segnala se esistono altri profili (lavoro, clone, spazio privato) e porta alle impostazioni di Android.
+- **Rete Wi-Fi e reti pubbliche**: tipo di protezione del Wi-Fi, VPN, DNS privato e consigli. Non rileva attacchi man-in-the-middle.
+- **Permessi: chi usa cosa**: per ogni permesso (fotocamera, microfono, posizione, SMS…) le app che lo hanno, con collegamento alla loro scheda.
+- **Controllo degli APK scaricati**: controlla i file .apk prima dell'installazione (app spia note, firma diversa, permessi sensibili).
+- **Avvisi in background**: ogni 30 minuti circa controlla in silenzio e manda una notifica se compare un'app spia nota, un nuovo servizio di accessibilità, un nuovo amministratore del dispositivo, un nuovo lettore di notifiche o un'app installata da APK con permessi sensibili.
+- **Widget** per la schermata Home con lo stato di sicurezza e un tasto per aggiornarlo.
 
 ## Privacy
+
+Informativa completa / full policy: [PRIVACY.md](PRIVACY.md). L'app è disponibile in italiano e inglese (segue la lingua del telefono).
 
 L'app **non ha il permesso Internet**: non può inviare nulla fuori dal telefono. Non modifica né elimina niente senza la tua conferma.
 

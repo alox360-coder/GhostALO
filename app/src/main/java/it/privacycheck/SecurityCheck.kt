@@ -41,13 +41,13 @@ object SecurityCheck {
         // Blocco schermo
         val km = ctx.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
         if (km.isDeviceSecure) {
-            out.add(Check(0, "Blocco schermo", "PIN, password o sequenza attivi.", null))
+            out.add(Check(0, tr("Blocco schermo"), tr("PIN, password o sequenza attivi."), null))
         } else {
             penalty += 25
             out.add(
                 Check(
-                    3, "Blocco schermo ASSENTE",
-                    "Chiunque abbia il telefono in mano può leggere tutto. Imposta un PIN.",
+                    3, tr("Blocco schermo ASSENTE"),
+                    tr("Chiunque abbia il telefono in mano può leggere tutto. Imposta un PIN."),
                     Settings.ACTION_SECURITY_SETTINGS
                 )
             )
@@ -59,27 +59,27 @@ object SecurityCheck {
             penalty += 10
             out.add(
                 Check(
-                    2, "Sistema operativo datato",
-                    ver + ": non riceve più aggiornamenti di sicurezza dal produttore.",
+                    2, tr("Sistema operativo datato"),
+                    ver + tr(": non riceve più aggiornamenti di sicurezza dal produttore."),
                     Settings.ACTION_DEVICE_INFO_SETTINGS
                 )
             )
         } else {
-            out.add(Check(0, "Versione di Android", ver, null))
+            out.add(Check(0, tr("Versione di Android"), ver, null))
         }
 
         // Patch di sicurezza
         try {
             val patch = Build.VERSION.SECURITY_PATCH
             val days = ChronoUnit.DAYS.between(LocalDate.parse(patch), LocalDate.now())
-            val d = "Patch del $patch ($days giorni fa)."
+            val d = trf("Patch del %s (%s giorni fa).", patch, days)
             if (days <= 120) {
-                out.add(Check(0, "Aggiornamento di sicurezza", d, null))
+                out.add(Check(0, tr("Aggiornamento di sicurezza"), d, null))
             } else if (days <= 240) {
                 penalty += 10
                 out.add(
                     Check(
-                        2, "Aggiornamento di sicurezza non recente", d + " Cerca aggiornamenti.",
+                        2, tr("Aggiornamento di sicurezza non recente"), d + tr(" Cerca aggiornamenti."),
                         "android.settings.SYSTEM_UPDATE_SETTINGS"
                     )
                 )
@@ -87,13 +87,13 @@ object SecurityCheck {
                 penalty += 20
                 out.add(
                     Check(
-                        3, "Aggiornamento di sicurezza MOLTO vecchio", d + " Aggiorna il sistema.",
+                        3, tr("Aggiornamento di sicurezza MOLTO vecchio"), d + tr(" Aggiorna il sistema."),
                         "android.settings.SYSTEM_UPDATE_SETTINGS"
                     )
                 )
             }
         } catch (e: Exception) {
-            out.add(Check(1, "Aggiornamento di sicurezza", "Data non leggibile.", null))
+            out.add(Check(1, tr("Aggiornamento di sicurezza"), tr("Data non leggibile."), null))
         }
 
         // Crittografia
@@ -104,18 +104,18 @@ object SecurityCheck {
                 st == DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE_PER_USER ||
                 st == DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE_DEFAULT_KEY
             ) {
-                out.add(Check(0, "Crittografia dei dati", "Memoria cifrata.", null))
+                out.add(Check(0, tr("Crittografia dei dati"), tr("Memoria cifrata."), null))
             } else {
                 penalty += 15
                 out.add(
                     Check(
-                        3, "Memoria NON cifrata", "I dati sono leggibili se il telefono viene smontato.",
+                        3, tr("Memoria NON cifrata"), tr("I dati sono leggibili se il telefono viene smontato."),
                         Settings.ACTION_SECURITY_SETTINGS
                     )
                 )
             }
         } catch (e: Exception) {
-            out.add(Check(1, "Crittografia dei dati", "Stato non leggibile.", null))
+            out.add(Check(1, tr("Crittografia dei dati"), tr("Stato non leggibile."), null))
         }
 
         // Debug USB e opzioni sviluppatore
@@ -125,8 +125,8 @@ object SecurityCheck {
             penalty += 10
             out.add(
                 Check(
-                    2, "Debug USB attivo",
-                    "Un computer collegato col cavo potrebbe accedere al telefono. Disattivalo se non lo usi.",
+                    2, tr("Debug USB attivo"),
+                    tr("Un computer collegato col cavo potrebbe accedere al telefono. Disattivalo se non lo usi."),
                     Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS
                 )
             )
@@ -134,12 +134,12 @@ object SecurityCheck {
             penalty += 3
             out.add(
                 Check(
-                    1, "Opzioni sviluppatore attive", "Il debug USB è spento. Puoi disattivarle.",
+                    1, tr("Opzioni sviluppatore attive"), tr("Il debug USB è spento. Puoi disattivarle."),
                     Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS
                 )
             )
         } else {
-            out.add(Check(0, "Debug USB", "Spento.", null))
+            out.add(Check(0, tr("Debug USB"), tr("Spento."), null))
         }
 
         // DNS privato
@@ -148,13 +148,13 @@ object SecurityCheck {
             penalty += 5
             out.add(
                 Check(
-                    2, "DNS privato disattivato",
-                    "Le richieste DNS viaggiano in chiaro. Attivalo in Rete e Internet → DNS privato.",
+                    2, tr("DNS privato disattivato"),
+                    tr("Le richieste DNS viaggiano in chiaro. Attivalo in Rete e Internet → DNS privato."),
                     Settings.ACTION_WIRELESS_SETTINGS
                 )
             )
         } else {
-            out.add(Check(0, "DNS privato", "Modalità: $dns.", null))
+            out.add(Check(0, tr("DNS privato"), trf("Modalità: %s.", dns), null))
         }
 
         // VPN
@@ -162,7 +162,23 @@ object SecurityCheck {
             val cm = ctx.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
             val caps = cm.getNetworkCapabilities(cm.activeNetwork)
             val vpn = caps != null && caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
-            out.add(Check(1, "VPN", if (vpn) "Una VPN è attiva ora." else "Nessuna VPN attiva ora.", null))
+            if (vpn) {
+                out.add(
+                    Check(
+                        0, tr("VPN attiva"),
+                        tr("Il traffico passa da una VPN. Tocca per aprirne le impostazioni."),
+                        Settings.ACTION_VPN_SETTINGS
+                    )
+                )
+            } else {
+                out.add(
+                    Check(
+                        1, tr("Nessuna VPN attiva"),
+                        tr("Non è obbligatoria, quindi non toglie punti. Su Wi-Fi pubblici ne conviene una di un fornitore affidabile. Tocca per le impostazioni VPN."),
+                        Settings.ACTION_VPN_SETTINGS
+                    )
+                )
+            }
         } catch (e: Exception) {
             // ignora
         }
@@ -183,13 +199,13 @@ object SecurityCheck {
             penalty += 25
             out.add(
                 Check(
-                    3, "Segnali di ROOT",
-                    "Trovati $rootSigns indizi di accesso root o firmware non ufficiale: la sicurezza di Android è indebolita.",
+                    3, tr("Segnali di ROOT"),
+                    trf("Trovati %s indizi di accesso root o firmware non ufficiale: la sicurezza di Android è indebolita.", rootSigns),
                     null
                 )
             )
         } else {
-            out.add(Check(0, "Root", "Nessun indizio di root.", null))
+            out.add(Check(0, "Root", tr("Nessun indizio di root."), null))
         }
 
         // Timeout schermo
@@ -198,12 +214,12 @@ object SecurityCheck {
             penalty += 3
             out.add(
                 Check(
-                    2, "Spegnimento schermo lento", "Lo schermo resta acceso " + (to / 1000) + " secondi. Meglio 30-60.",
+                    2, tr("Spegnimento schermo lento"), tr("Lo schermo resta acceso ") + (to / 1000) + tr(" secondi. Meglio 30-60."),
                     Settings.ACTION_DISPLAY_SETTINGS
                 )
             )
         } else {
-            out.add(Check(0, "Spegnimento schermo", "" + (to / 1000) + " secondi.", null))
+            out.add(Check(0, tr("Spegnimento schermo"), "" + (to / 1000) + tr(" secondi."), null))
         }
 
         // Accessibilità di terze parti
@@ -227,13 +243,13 @@ object SecurityCheck {
                 penalty += 5
                 out.add(
                     Check(
-                        2, "Accessibilità: $third app non di sistema",
-                        names.joinToString(", ") + ". Possono leggere lo schermo: verifica che le riconosci.",
+                        2, trf("Accessibilità: %s app non di sistema", third),
+                        names.joinToString(", ") + tr(". Possono leggere lo schermo: verifica che le riconosci."),
                         Settings.ACTION_ACCESSIBILITY_SETTINGS
                     )
                 )
             } else {
-                out.add(Check(0, "Servizi di accessibilità", "Nessuna app di terze parti.", null))
+                out.add(Check(0, tr("Servizi di accessibilità"), tr("Nessuna app di terze parti."), null))
             }
         } catch (e: Exception) {
             // ignora
