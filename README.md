@@ -7,15 +7,21 @@ App Android in stile terminale (verde su nero) per controllare la privacy del te
 - **Scansione privacy + app spia**: confronta le app installate con l'elenco pubblico di stalkerware noti (nomi di pacchetto e firme) e segnala permessi e servizi a rischio.
 - **Rilevatore di tracker**: cerca nel codice delle app le librerie pubblicitarie e di tracciamento più note.
 - **Pulizia**: APK già scaricati, file temporanei, miniature, cartelle vuote, duplicati, cache e app non usate da tempo. Ogni eliminazione richiede conferma. Il pulsante "Libera cache di sistema" chiede ad Android di fare spazio cancellando le cache delle altre app (il risultato dipende dal telefono).
+- **File grandi e vecchi**: file pesanti non modificati da tempo (soglia a scelta), con elenco e conferma. **Cartelle di app disinstallate**: cartelle con nome da app non più installate (solo indizi). La pulizia include anche download incompleti e archivi vecchi in Download, e un tasto per cancellare gli appunti.
+- **Cestino**: le pulizie spostano i file in una cartella recuperabile per 7 o 30 giorni (ripristino con un tocco). **Elenco app spia aggiornabile da file** (ioc.yaml di Echap, senza Internet). **Controllo firme**: avviso se la firma di un'app cambia. **Esporta elenco delle app** in un file di testo.
+- **Risultati prudenti**: il controllo rapido distingue minaccia nota, da verificare e nessun indicatore, elenca i controlli eseguiti e quelli non completati. Prima di eliminare, l'app ricontrolla che i file non siano cambiati dopo la scansione.
 - **Pulizia WhatsApp e Telegram**: media ricevuti vecchi, note vocali, copie dei file inviati e stati già visti, con soglia a scelta (30-365 giorni). Le chat non vengono toccate; ogni eliminazione richiede conferma.
 - **Analisi dello spazio per tipo**: foto, video, audio, documenti, archivi e app con barre in stile terminale, più i file più grandi.
 - **App in background**: quali app hanno tenuto attivo un servizio in primo piano e per quanto, confrontato con l uso reale; collegamenti alle impostazioni di batteria di Android.
 - **App senza icona e cartelle nascoste**: elenca le app installate senza icona nel menu (con permessi e servizi) e le cartelle nascoste con foto o video. Solo indizi.
 - **Spazio privato e profili**: segnala se esistono altri profili (lavoro, clone, spazio privato) e porta alle impostazioni di Android.
 - **Rete Wi-Fi e reti pubbliche**: tipo di protezione del Wi-Fi, VPN, DNS privato e consigli. Non rileva attacchi man-in-the-middle.
+- **Cookie e tracciamento**: elenco dei browser installati con collegamento alla loro scheda (dove si cancellano i dati) e consigli. L'app non può cancellare i cookie al posto tuo: Android lo vieta.
 - **Permessi: chi usa cosa**: per ogni permesso (fotocamera, microfono, posizione, SMS…) le app che lo hanno, con collegamento alla loro scheda.
 - **Controllo degli APK scaricati**: controlla i file .apk prima dell'installazione (app spia note, firma diversa, permessi sensibili).
 - **Avvisi in background**: ogni 30 minuti circa controlla in silenzio e manda una notifica se compare un'app spia nota, un nuovo servizio di accessibilità, un nuovo amministratore del dispositivo, un nuovo lettore di notifiche o un'app installata da APK con permessi sensibili.
+- **Impostazioni avvisi**: frequenza del controllo (15 min-6 ore), tipi di avviso, app fidate e storico degli ultimi 50 avvisi; avviso quando un'app ottiene un nuovo permesso sensibile (fotocamera, microfono, SMS, posizione in background…).
+- **Rapporto errori locale**: se l'app si chiude per un errore, al prossimo avvio puoi condividere il rapporto; nulla viene inviato in automatico.
 - **Widget** per la schermata Home: una tessera piccola (1x1, come un'icona) con OK, !! o XX e una versione estesa con i dettagli.
 
 ## Privacy

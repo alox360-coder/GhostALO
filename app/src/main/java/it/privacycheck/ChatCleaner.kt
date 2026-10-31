@@ -131,6 +131,7 @@ object ChatCleaner {
             .sortedWith(compareBy({ it.key.substringBefore('|') }, { order.indexOf(Kind.valueOf(it.key.substringAfter('|'))) }))
             .map { it.value }
             .filter { it.count > 0 }
+            .map { it.seal() }
         return ChatReport(found, totals, list, days)
     }
 }

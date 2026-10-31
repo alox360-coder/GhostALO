@@ -22,6 +22,8 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.view.accessibility.AccessibilityManager
+import org.json.JSONArray
+import org.json.JSONObject
 
 class Alert(
     val id: Int,
@@ -39,8 +41,13 @@ class Snap(
     val admin: Set<String>,
     val listeners: Set<String>,
     val spy: Set<String>,
-    val labels: Map<String, String>
+    val labels: Map<String, String>,
+    val perms: Set<String> = emptySet(),
+    val certs: Set<String> = emptySet(),
+    val spyBy: Map<String, String> = emptyMap()
 )
+
+class HistItem(val time: Long, val high: Boolean, val title: String, val text: String, val pkg: String?)
 
 /**
  * Controllo periodico in background. Confronta lo stato attuale con quello salvato
@@ -50,7 +57,7 @@ class Snap(
 object Watch {
 
     const val JOB_ID = 4711
-    private const val PERIOD_MS = 30L * 60L * 1000L
+    private const val MAX_HISTORY = 50
     private const val CH_HIGH = "alert_high"
     private const val CH_INFO = "alert_info"
     private const val MAX_NOTIFICATIONS = 5
@@ -81,6 +88,113 @@ object Watch {
         prefs(ctx).edit().putBoolean("alert_new_apk", v).apply()
     }
 
+    fun periodMin(ctx: Context): Int = prefs(ctx).getInt("period_min", 30)
+
+    fun setPeriodMin(ctx: Context, m: Int) {
+        prefs(ctx).edit().putInt("period_min", m).apply()
+        try {
+            if (isEnabled(ctx)) schedule(ctx)
+        } catch (e: Exception) {
+            // ignora
+        }
+    }
+
+    /** Vero se gli avvisi sono attivi ma l'ultimo controllo è molto più vecchio del previsto. */
+    fun isStale(ctx: Context): Boolean {
+        if (!isEnabled(ctx)) return false
+        val t = prefs(ctx).getLong("st_time", 0L)
+        if (t == 0L) return false
+        val limitMin = maxOf(3 * periodMin(ctx), 180)
+        return System.currentTimeMillis() - t > limitMin * 60L * 1000L
+    }
+
+    fun lastFailure(ctx: Context): Long = prefs(ctx).getLong("st_fail", 0L)
+
+    fun markFailure(ctx: Context) {
+        prefs(ctx).edit().putLong("st_fail", System.currentTimeMillis()).apply()
+    }
+
+    fun toggle(ctx: Context, key: String): Boolean = prefs(ctx).getBoolean(key, true)
+
+    fun setToggle(ctx: Context, key: String, v: Boolean) {
+        prefs(ctx).edit().putBoolean(key, v).apply()
+    }
+
+    fun trusted(ctx: Context): Set<String> = getSet(prefs(ctx), "trusted")
+
+    fun setTrusted(ctx: Context, pkg: String, v: Boolean) {
+        val s = HashSet(trusted(ctx))
+        if (v) s.add(pkg) else s.remove(pkg)
+        prefs(ctx).edit().putStringSet("trusted", s).apply()
+    }
+
+    val sensitivePerms = listOf(
+        Manifest.permission.CAMERA,
+        Manifest.permission.RECORD_AUDIO,
+        Manifest.permission.READ_SMS,
+        Manifest.permission.SEND_SMS,
+        Manifest.permission.RECEIVE_SMS,
+        Manifest.permission.READ_CALL_LOG,
+        Manifest.permission.READ_CONTACTS,
+        Manifest.permission.ACCESS_BACKGROUND_LOCATION
+    )
+
+    private fun permName(perm: String): String = when (perm) {
+        Manifest.permission.CAMERA -> tr("fotocamera")
+        Manifest.permission.RECORD_AUDIO -> tr("microfono")
+        Manifest.permission.READ_SMS, Manifest.permission.SEND_SMS, Manifest.permission.RECEIVE_SMS -> "SMS"
+        Manifest.permission.READ_CALL_LOG -> tr("registro chiamate")
+        Manifest.permission.READ_CONTACTS -> tr("contatti")
+        else -> tr("posizione in background")
+    }
+
+    // ---------- Storico avvisi ----------
+
+    @Synchronized
+    private fun logAlert(ctx: Context, a: Alert) {
+        try {
+            val pr = prefs(ctx)
+            val old = JSONArray(pr.getString("history", "[]"))
+            val o = JSONObject()
+            o.put("t", System.currentTimeMillis())
+            o.put("h", a.high)
+            o.put("ti", a.title)
+            o.put("tx", a.text)
+            o.put("p", a.pkg ?: "")
+            val out = JSONArray()
+            out.put(o)
+            var i = 0
+            while (i < old.length() && out.length() < MAX_HISTORY) {
+                out.put(old.get(i))
+                i++
+            }
+            pr.edit().putString("history", out.toString()).apply()
+        } catch (e: Exception) {
+            // ignora
+        }
+    }
+
+    @Synchronized
+    fun history(ctx: Context): List<HistItem> {
+        val out = ArrayList<HistItem>()
+        try {
+            val arr = JSONArray(prefs(ctx).getString("history", "[]"))
+            for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i)
+                val p = o.optString("p", "")
+                out.add(HistItem(o.getLong("t"), o.optBoolean("h"), o.optString("ti"), o.optString("tx"), if (p.isEmpty()) null else p))
+            }
+        } catch (e: Exception) {
+            // ignora
+        }
+        return out
+    }
+
+    @Synchronized
+    fun clearHistory(ctx: Context) {
+        prefs(ctx).edit().remove("history").apply()
+    }
+
     private fun getSet(pr: SharedPreferences, key: String): Set<String> =
         pr.getStringSet(key, null)?.toSet() ?: emptySet()
 
@@ -93,7 +207,7 @@ object Watch {
 
     private fun schedule(ctx: Context) {
         val info = JobInfo.Builder(JOB_ID, ComponentName(ctx, WatchJobService::class.java))
-            .setPeriodic(PERIOD_MS)
+            .setPeriodic(periodMin(ctx) * 60L * 1000L)
             .setPersisted(true)
             .build()
         scheduler(ctx).schedule(info)
@@ -148,6 +262,11 @@ object Watch {
         return out
     }
 
+    private fun certOf(p: PackageInfo): String? {
+        val l = Stalker.certHashes(p)
+        return if (l.isEmpty()) null else l.sorted().joinToString("+")
+    }
+
     fun snapshot(ctx: Context): Snap {
         val pm = ctx.packageManager
         val (spyP, spyC) = Stalker.load(ctx)
@@ -163,21 +282,28 @@ object Watch {
         val risk = HashSet<String>()
         val spy = HashSet<String>()
         val labels = HashMap<String, String>()
+        val perms = HashSet<String>()
+        val certs = HashSet<String>()
+        val spyBy = HashMap<String, String>()
 
         for (p in pkgs) {
             val ai = p.applicationInfo ?: continue
             val pkg = p.packageName
             if (pkg == ctx.packageName) continue
             val sys = (ai.flags and ApplicationInfo.FLAG_SYSTEM) != 0
-            val isSpy = pkg in spyP ||
-                (!sys && spyC.isNotEmpty() && Stalker.certHashes(p).any { it in spyC })
-            if (isSpy) {
+            val byPkg = pkg in spyP
+            val byCert = !byPkg && !sys && spyC.isNotEmpty() && Stalker.certHashes(p).any { it in spyC }
+            if (byPkg || byCert) {
                 spy.add(pkg)
+                spyBy[pkg] = if (byPkg) "pkg" else "cert"
                 labels[pkg] = pm.getApplicationLabel(ai).toString()
             }
             if (sys) continue
             installed.add(pkg)
             labels[pkg] = pm.getApplicationLabel(ai).toString()
+            val gr = granted(p)
+            certOf(p)?.let { certs.add(pkg + "|" + it) }
+            for (sp in sensitivePerms) if (sp in gr) perms.add(pkg + "|" + sp)
             val installer = try {
                 pm.getInstallSourceInfo(pkg).installingPackageName
             } catch (e: Exception) {
@@ -185,7 +311,7 @@ object Watch {
             }
             if (installer == null || installer !in stores) {
                 side.add(pkg)
-                val g = granted(p)
+                val g = gr
                 val sensitive = Manifest.permission.READ_SMS in g ||
                     Manifest.permission.READ_CALL_LOG in g ||
                     (Manifest.permission.CAMERA in g && Manifest.permission.RECORD_AUDIO in g)
@@ -237,7 +363,7 @@ object Watch {
             // ignora
         }
 
-        return Snap(installed, side, risk, acc, admin, listeners, spy, labels)
+        return Snap(installed, side, risk, acc, admin, listeners, spy, labels, perms, certs, spyBy)
     }
 
     private fun saveStatus(ctx: Context, cur: Snap) {
@@ -296,9 +422,12 @@ object Watch {
             val bLst = getSet(pr, "b_lst")
             val bRisk = getSet(pr, "b_risk")
             val bSide = getSet(pr, "b_side")
+            val bInst = getSet(pr, "b_inst")
+            val bPerm = getSet(pr, "b_perm")
+            val trust = getSet(pr, "trusted")
 
             for (p in cur.acc) {
-                if (p !in bAcc) {
+                if (p !in bAcc && p !in trust && toggle(ctx, "alert_acc")) {
                     alerts.add(
                         Alert(
                             ("acc:" + p).hashCode(), true, tr("Nuovo servizio di accessibilità"),
@@ -309,7 +438,7 @@ object Watch {
                 }
             }
             for (p in cur.admin) {
-                if (p !in bAdm) {
+                if (p !in bAdm && p !in trust && toggle(ctx, "alert_adm")) {
                     alerts.add(
                         Alert(
                             ("adm:" + p).hashCode(), true, tr("Nuovo amministratore del dispositivo"),
@@ -320,7 +449,7 @@ object Watch {
                 }
             }
             for (p in cur.risk) {
-                if (p !in bRisk) {
+                if (p !in bRisk && p !in trust && toggle(ctx, "alert_risk")) {
                     alerts.add(
                         Alert(
                             ("risk:" + p).hashCode(), true, tr("App da APK con permessi sensibili"),
@@ -331,7 +460,7 @@ object Watch {
                 }
             }
             for (p in cur.listeners) {
-                if (p !in bLst) {
+                if (p !in bLst && p !in trust && toggle(ctx, "alert_lst")) {
                     alerts.add(
                         Alert(
                             ("lst:" + p).hashCode(), false, tr("Nuovo lettore di notifiche"),
@@ -343,7 +472,7 @@ object Watch {
             }
             if (alertNewApk(ctx)) {
                 for (p in cur.side) {
-                    if (p !in bSide && p !in cur.spy && p !in cur.risk && p !in cur.acc && p !in cur.admin) {
+                    if (p !in bSide && p !in trust && p !in cur.spy && p !in cur.risk && p !in cur.acc && p !in cur.admin) {
                         alerts.add(
                             Alert(
                                 ("apk:" + p).hashCode(), false, tr("Nuova app installata da APK"),
@@ -352,6 +481,47 @@ object Watch {
                             )
                         )
                     }
+                }
+            }
+
+            // Firma cambiata: l'app è stata ricompilata/manomessa o sostituita da un'altra.
+            if (toggle(ctx, "alert_sig") && pr.contains("b_cert")) {
+                val bCert = getSet(pr, "b_cert")
+                val oldBy = HashMap<String, String>()
+                for (e in bCert) oldBy[e.substringBefore('|')] = e.substringAfter('|')
+                for (e in cur.certs) {
+                    val pkg = e.substringBefore('|')
+                    val old = oldBy[pkg] ?: continue
+                    if (old != e.substringAfter('|') && pkg in bInst && pkg !in trust && pkg !in cur.spy) {
+                        alerts.add(
+                            Alert(
+                                ("sig:" + pkg).hashCode(), true, tr("Firma dell'app cambiata"),
+                                lab(pkg) + tr(" ora ha una firma diversa da prima. Può essere stata sostituita da una copia modificata: se non l'hai reinstallata tu, disinstallala."),
+                                pkg
+                            )
+                        )
+                    }
+                }
+            }
+
+            // Nuovi permessi sensibili ottenuti da app già presenti (es. dopo un aggiornamento).
+            if (toggle(ctx, "alert_perm") && pr.contains("b_perm")) {
+                val gained = HashMap<String, MutableList<String>>()
+                for (e in cur.perms) {
+                    if (e in bPerm) continue
+                    val pkg = e.substringBefore('|')
+                    if (pkg !in bInst || pkg in trust || pkg in cur.spy) continue
+                    gained.getOrPut(pkg) { ArrayList() }.add(permName(e.substringAfter('|')))
+                }
+                for ((pkg, names) in gained) {
+                    alerts.add(
+                        Alert(
+                            ("perm:" + pkg).hashCode(), true, tr("Nuovo permesso sensibile"),
+                            lab(pkg) + tr(" ha ottenuto l'accesso a: ") + names.distinct().joinToString(", ") +
+                                tr(". Se non te l'aspettavi, controlla i permessi."),
+                            pkg
+                        )
+                    )
                 }
             }
         }
@@ -365,9 +535,16 @@ object Watch {
             .putStringSet("b_adm", HashSet(cur.admin))
             .putStringSet("b_lst", HashSet(cur.listeners))
             .putStringSet("b_spy", HashSet(cur.spy))
+            .putStringSet("b_perm", HashSet(cur.perms))
+            .putStringSet("b_cert", HashSet(cur.certs))
             .putBoolean("init", true)
             .apply()
         saveStatus(ctx, cur)
+        try {
+            Trash.purge(ctx, false)
+        } catch (e: Exception) {
+            // ignora
+        }
 
         if (alerts.isNotEmpty()) {
             val sorted = alerts.sortedByDescending { it.high }
@@ -393,11 +570,12 @@ object Watch {
         high.description = tr("App spia, nuovi servizi di accessibilità e amministratori del dispositivo")
         nm.createNotificationChannel(high)
         val info = NotificationChannel(CH_INFO, tr("Altri avvisi"), NotificationManager.IMPORTANCE_DEFAULT)
-        info.description = tr("Nuovi lettori di notifiche e nuove app installate da APK")
+        info.description = tr("Nuovi lettori di notifiche, nuovi permessi e nuove app installate da APK")
         nm.createNotificationChannel(info)
     }
 
     private fun post(ctx: Context, a: Alert) {
+        if (a.id != 9999) logAlert(ctx, a)
         try {
             ensureChannels(ctx)
             val intent = if (a.pkg != null) {
@@ -441,7 +619,7 @@ class WatchJobService : JobService() {
             try {
                 Watch.runCheck(ctx)
             } catch (e: Exception) {
-                // riproverà al prossimo giro
+                Watch.markFailure(ctx)
             }
             jobFinished(params, false)
         }.start()

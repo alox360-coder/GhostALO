@@ -18,7 +18,7 @@ android {
         targetSdk = 34
         // Il numero di build di GitHub garantisce versionCode sempre crescente.
         versionCode = 100 + (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0)
-        versionName = "4.6"
+        versionName = "5.1"
     }
 
     signingConfigs {

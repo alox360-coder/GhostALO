@@ -20,6 +20,19 @@ class JunkCategory(val title: String, val hint: String, var checked: Boolean) {
     val dirs = ArrayList<File>()
     var bytes = 0L
     val count: Int get() = files.size + dirs.size
+
+    /** Dimensione e data dei file al momento della scansione: si ricontrollano prima di eliminare. */
+    val stamp = HashMap<File, Pair<Long, Long>>()
+
+    fun seal(): JunkCategory {
+        for (f in files) stamp[f] = Pair(f.length(), f.lastModified())
+        return this
+    }
+
+    fun unchanged(f: File): Boolean {
+        val s = stamp[f] ?: return true
+        return f.exists() && f.length() == s.first && f.lastModified() == s.second
+    }
 }
 
 data class AppSize(val pkg: String, val label: String, val cache: Long, val total: Long)
@@ -41,6 +54,8 @@ private class Item(val dir: File, val depth: Int, val thumbs: Boolean, val hidde
 object Cleaner {
 
     private val tempExt = setOf("tmp", "temp", "log", "dmp", "chk")
+    private val partialExt = setOf("crdownload", "part", "partial", "download", "opdownload")
+    private val archiveExt = setOf("zip", "rar", "7z")
     private const val DAY = 24L * 3600L * 1000L
 
     fun hasAllFiles(): Boolean = Environment.isExternalStorageManager()
@@ -94,6 +109,16 @@ object Cleaner {
             tr("Cartelle .thumbnails e file .thumbdata: Android le ricrea se servono."),
             true
         )
+        val partial = JunkCategory(
+            tr("Download incompleti"),
+            tr("File lasciati a metà (.crdownload, .part, .partial…) più vecchi di 2 giorni."),
+            true
+        )
+        val archives = JunkCategory(
+            tr("Archivi vecchi in Download"),
+            tr("File .zip, .rar, .7z nella cartella Download non modificati da oltre 90 giorni (spesso già estratti)."),
+            false
+        )
         val empty = JunkCategory(
             tr("Cartelle vuote"),
             tr("Cartelle senza alcun file (le cartelle principali come DCIM non vengono toccate)."),
@@ -110,6 +135,7 @@ object Cleaner {
         val stack = ArrayList<Item>()
         stack.add(Item(root, 0, false, false))
         var visited = 0
+        val nowMs = System.currentTimeMillis()
 
         while (stack.isNotEmpty() && visited < 300000) {
             Work.check()
@@ -122,7 +148,7 @@ object Cleaner {
             for (e in entries) {
                 visited++
                 if (e.isDirectory) {
-                    if (cur.depth == 0 && e.name == "Android") continue
+                    if (cur.depth == 0 && (e.name == "Android" || e.name == Trash.DIR_NAME)) continue
                     val isThumbs = cur.thumbs || e.name.equals(".thumbnails", ignoreCase = true)
                     stack.add(Item(e, cur.depth + 1, isThumbs, cur.hidden || e.name.startsWith(".")))
                 } else if (e.isFile) {
@@ -136,6 +162,14 @@ object Cleaner {
                     } else if (ext == "apk") {
                         apk.files.add(e)
                         apk.bytes += len
+                    } else if (ext in partialExt && e.lastModified() < nowMs - 2L * DAY) {
+                        partial.files.add(e)
+                        partial.bytes += len
+                    } else if (ext in archiveExt && !cur.hidden && e.lastModified() < nowMs - 90L * DAY &&
+                        e.absolutePath.contains("/Download", ignoreCase = true)
+                    ) {
+                        archives.files.add(e)
+                        archives.bytes += len
                     } else if (ext in tempExt) {
                         temp.files.add(e)
                         temp.bytes += len
@@ -167,16 +201,33 @@ object Cleaner {
             }
         }
 
-        return listOf(apk, temp, thumbs, empty, dup).filter { it.count > 0 && (it.bytes > 0L || it.dirs.isNotEmpty()) }
+        return listOf(apk, partial, archives, temp, thumbs, empty, dup)
+            .filter { it.count > 0 && (it.bytes > 0L || it.dirs.isNotEmpty()) }
+            .map { it.seal() }
     }
 
     /** Elimina i file delle categorie. Restituisce (byte liberati, file non eliminati). */
     fun delete(ctx: Context, cats: List<JunkCategory>): Pair<Long, Int> {
+        if (Trash.active(ctx)) {
+            // Cestino: i file vengono spostati, non cancellati. Le cartelle vuote si eliminano.
+            val files = ArrayList<File>()
+            var changed = 0
+            for (c in cats) for (f in c.files) {
+                if (c.unchanged(f)) files.add(f) else if (f.exists()) changed++
+            }
+            val r = Trash.moveAll(ctx, files)
+            for (c in cats) for (d in c.dirs.sortedByDescending { it.absolutePath.length }) d.delete()
+            return Pair(r.first, r.second + changed)
+        }
         var freed = 0L
         var failed = 0
         val paths = ArrayList<String>()
         for (c in cats) {
             for (f in c.files) {
+                if (!c.unchanged(f)) {
+                    if (f.exists()) failed++
+                    continue
+                }
                 val len = f.length()
                 if (f.delete()) {
                     freed += len
@@ -271,6 +322,84 @@ object Cleaner {
             }
         }
         return out
+    }
+
+    /** File grandi non modificati da tempo (esclude la cartella Android). */
+    fun scanBigOld(minMb: Int, ageDays: Int): List<File> {
+        val limit = System.currentTimeMillis() - ageDays * DAY
+        val min = minMb * 1024L * 1024L
+        val out = ArrayList<File>()
+        val stack = ArrayList<File>()
+        stack.add(Environment.getExternalStorageDirectory())
+        var visited = 0
+        val root = stack[0]
+        while (stack.isNotEmpty() && visited < 300000) {
+            Work.check()
+            val d = stack.removeAt(stack.size - 1)
+            val entries = d.listFiles() ?: continue
+            for (e in entries) {
+                visited++
+                if (e.isDirectory) {
+                    if (d == root && (e.name == "Android" || e.name == Trash.DIR_NAME)) continue
+                    stack.add(e)
+                } else if (e.isFile && e.length() >= min && e.lastModified() < limit) {
+                    out.add(e)
+                }
+            }
+        }
+        return out.sortedByDescending { it.length() }.take(40)
+    }
+
+    /** Elimina singoli file. Restituisce (byte liberati, non eliminati). */
+    fun deleteFiles(ctx: Context, files: List<File>, stamps: Map<File, Pair<Long, Long>> = emptyMap()): Pair<Long, Int> {
+        val c = JunkCategory("", "", true)
+        c.files.addAll(files)
+        c.stamp.putAll(stamps)
+        return delete(ctx, listOf(c))
+    }
+
+    private val pkgLike = Regex("^[a-z][a-z0-9_]*(\\.[a-zA-Z0-9_]+)+$")
+
+    private fun installed(ctx: Context, pkg: String): Boolean = try {
+        ctx.packageManager.getPackageInfo(pkg, 0)
+        true
+    } catch (e: Exception) {
+        false
+    }
+
+    fun dirSize(d: File): Long {
+        var n = 0L
+        val stack = ArrayList<File>()
+        stack.add(d)
+        while (stack.isNotEmpty()) {
+            Work.check()
+            val x = stack.removeAt(stack.size - 1)
+            val l = x.listFiles() ?: continue
+            for (e in l) if (e.isDirectory) stack.add(e) else n += e.length()
+        }
+        return n
+    }
+
+    /** Cartelle con nome da pacchetto Android di app che non risultano più installate. Solo indizi. */
+    fun orphanDirs(ctx: Context): List<Pair<File, Long>> {
+        val root = Environment.getExternalStorageDirectory()
+        val parents = listOf(File(root, "Android/media"), root)
+        val out = ArrayList<Pair<File, Long>>()
+        for (parent in parents) {
+            val l = parent.listFiles() ?: continue
+            for (d in l) {
+                Work.check()
+                if (!d.isDirectory || !pkgLike.matches(d.name) || installed(ctx, d.name)) continue
+                out.add(Pair(d, dirSize(d)))
+            }
+        }
+        return out.sortedByDescending { it.second }
+    }
+
+    /** Elimina una cartella con tutto il contenuto (solo dopo conferma dell'utente). */
+    fun deleteTree(f: File): Boolean {
+        if (f.isDirectory) f.listFiles()?.forEach { deleteTree(it) }
+        return f.delete()
     }
 
     /** App non di sistema che non risultano aperte da oltre 60 giorni. */

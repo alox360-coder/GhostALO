@@ -113,7 +113,16 @@ class MainActivity : Activity() {
         scroll.addView(box)
         setContentView(scroll)
         Watch.ensureScheduled(this)
+        val app0 = applicationContext
+        Thread {
+            try {
+                Trash.purge(app0, false)
+            } catch (e: Exception) {
+                // ignora
+            }
+        }.start()
         showIntro()
+        offerCrashReport()
     }
 
     override fun onResume() {
@@ -245,15 +254,18 @@ class MainActivity : Activity() {
         screen = "intro"
         box.removeAllViews()
         text("> GhostALO_", size = 26f, color = green, bold = true, pad = 4)
-        text(tr("Versione") + " 4.6", size = 12f, color = grey, pad = 1)
+        text(tr("Versione") + " 5.1", size = 12f, color = grey, pad = 1)
         text(tr("Nessun accesso a Internet: i dati restano nel telefono."), size = 12f, color = grey, pad = 1)
         sep()
+        if (Watch.isStale(this)) {
+            text(tr("[!!] Gli avvisi in background sono in ritardo: Android potrebbe limitarli. Apri Strumenti > Avvisi."), size = 12f, color = orange, pad = 4)
+        }
         button(tr("[>] CONTROLLO RAPIDO\n     un tocco: dice se è tutto a posto")) { startQuick() }
         text(tr("Oppure scegli un'area:"), size = 12f, color = grey, pad = 8)
         button(tr("[S] Sicurezza\n     dispositivo, app spia, APK")) { showGroup("sec") }
         button(tr("[P] Privacy\n     permessi, tracker, rete, profili")) { showGroup("priv") }
         button(tr("[C] Pulizia e prestazioni\n     file inutili, chat, spazio, batteria")) { showGroup("clean") }
-        button(tr("[T] Strumenti\n     avvisi in background, widget")) { showGroup("tools") }
+        button(tr("[T] Strumenti\n     avvisi, impostazioni, storico, widget")) { showGroup("tools") }
         button(tr("[?] Informazioni e limiti")) { showAbout() }
     }
 
@@ -277,6 +289,7 @@ class MainActivity : Activity() {
                 button(tr("Rilevatore di tracker")) { startTrackerScan() }
                 button(tr("Rete Wi-Fi e reti pubbliche")) { showNet() }
                 button(tr("Spazio privato e profili")) { showProfiles() }
+                button(tr("Cookie e tracciamento")) { showCookies() }
             }
             "clean" -> {
                 title(tr("PULIZIA_E_PRESTAZIONI"))
@@ -284,10 +297,18 @@ class MainActivity : Activity() {
                 button(tr("Pulizia WhatsApp e Telegram")) { showChatHome() }
                 button(tr("Analisi dello spazio per tipo")) { showSpaceHome() }
                 button(tr("App attive in background e batteria")) { showBgHome() }
+                button(tr("File grandi e vecchi")) { showBigHome() }
+                button(tr("Cestino")) { showTrash() }
+                button(tr("Cartelle di app disinstallate")) { showOrphanHome() }
             }
             else -> {
                 title(tr("STRUMENTI"))
                 button(tr("Avvisi in background e widget")) { showWatch() }
+                button(tr("Impostazioni avvisi")) { showSettings() }
+                button(tr("App fidate")) { showTrusted() }
+                button(tr("Storico avvisi")) { showHistory() }
+                button(tr("Elenco app spia: aggiorna da file")) { showSpyDb() }
+                button(tr("Esporta elenco delle app")) { exportApps() }
             }
         }
         button(tr("[<] Menu principale")) { showIntro() }
@@ -332,7 +353,10 @@ class MainActivity : Activity() {
         val rows = ArrayList<Triple<Int, String, (() -> Unit)?>>()
         if (snap != null) {
             fun lab(p: String): String = snap.labels[p] ?: p
-            for (p in snap.spy) rows.add(Triple(3, tr("APP SPIA NOTA: ") + lab(p), { openApp(p) }))
+            for (p in snap.spy) {
+                val why = if (snap.spyBy[p] == "cert") tr("firma uguale a quella di uno stalkerware noto") else tr("nome del pacchetto presente nell'elenco")
+                rows.add(Triple(3, tr("APP SPIA NOTA: ") + lab(p) + "\n   (" + why + ")", { openApp(p) }))
+            }
             for (p in snap.acc) rows.add(Triple(2, tr("Accessibilità attiva: ") + lab(p), { openApp(p) }))
             for (p in snap.admin) rows.add(Triple(2, tr("Amministratore del dispositivo: ") + lab(p), { openApp(p) }))
             for (p in snap.listeners) rows.add(Triple(2, tr("Legge le notifiche: ") + lab(p), { openApp(p) }))
@@ -350,13 +374,37 @@ class MainActivity : Activity() {
         }
         rows.sortByDescending { it.first }
         val worst = rows.maxOfOrNull { it.first } ?: 0
-        if (worst >= 3) {
+        val incomplete = sec == null || snap == null
+        val known = snap != null && snap.spy.isNotEmpty()
+        if (known) {
+            text(tr("[XX] MINACCIA NOTA RILEVATA"), size = 20f, color = red, bold = true, pad = 8)
+            text(tr("Corrispondenza con un indicatore dell'elenco pubblico di stalkerware."), size = 12f, color = red, pad = 2)
+        } else if (worst >= 3) {
             text(tr("[XX] PROBLEMI DA RISOLVERE (") + rows.size + ")", size = 20f, color = red, bold = true, pad = 8)
         } else if (worst >= 2) {
             text(tr("[!!] DA VERIFICARE (") + rows.size + ")", size = 20f, color = orange, bold = true, pad = 8)
+            text(tr("Segnali che richiedono un controllo tuo: non sono la prova di un'infezione."), size = 12f, color = grey, pad = 2)
+        } else if (incomplete) {
+            text(tr("[??] CONTROLLO INCOMPLETO"), size = 20f, color = orange, bold = true, pad = 8)
         } else {
-            text(tr("[OK] TUTTO A POSTO"), size = 20f, color = green, bold = true, pad = 8)
+            text(tr("[OK] NESSUN INDICATORE RILEVATO"), size = 20f, color = green, bold = true, pad = 8)
         }
+        section(tr("CONTROLLI ESEGUITI"))
+        val sp = Stalker.load(this)
+        text(
+            (if (snap != null) "[v] " else "[--] ") + tr("App installate: elenco spia (") + (sp.first.size + sp.second.size) + tr(" indicatori), accessibilità, amministratori, lettori di notifiche, APK con permessi sensibili") +
+                (if (snap == null) tr(" - NON COMPLETATO") else ""),
+            size = 12f, color = if (snap != null) grey else orange, pad = 2
+        )
+        text(
+            (if (sec != null) "[v] " else "[--] ") + tr("Impostazioni del dispositivo: blocco schermo, aggiornamenti, debug USB, root, DNS e altro") +
+                (if (sec == null) tr(" - NON COMPLETATO") else ""),
+            size = 12f, color = if (sec != null) grey else orange, pad = 2
+        )
+        text(
+            "[--] " + tr("Non eseguiti qui: scansione completa dei permessi e tracker (usa il pulsante qui sotto)."),
+            size = 12f, color = grey, pad = 2
+        )
         if (sec != null) {
             text(tr("Punteggio sicurezza dispositivo: ") + sec.score + "/100", size = 13f, color = grey, pad = 2)
         }
@@ -370,10 +418,13 @@ class MainActivity : Activity() {
                 if (act != null) t.setOnClickListener { act() }
             }
         } else {
-            text(tr("Nessun indizio trovato dai controlli rapidi."), size = 13f, color = grey, pad = 6)
+            text(
+                if (incomplete) tr("Nessun indizio nei controlli completati, ma il controllo è incompleto: ripetilo.") else tr("Nessun indizio trovato nei controlli eseguiti."),
+                size = 13f, color = grey, pad = 6
+            )
         }
         text(
-            tr("È un controllo di indizi, non un antivirus: non garantisce che il telefono sia pulito."),
+            tr("Nessun indicatore non significa nessuno spyware: è un controllo di indizi, non un antivirus, e non garantisce che il telefono sia pulito."),
             size = 11f, color = grey, pad = 8
         )
         button(tr("[>] Scansione completa (app spia e permessi)")) { startScan() }
@@ -710,7 +761,7 @@ class MainActivity : Activity() {
 
         section(tr("AVVISI IN BACKGROUND"))
         text(
-            tr("Ogni 30 minuti circa l'app controlla in silenzio se è comparso qualcosa di nuovo e ti manda una notifica. Controlla: app spia note, nuovi servizi di accessibilità, nuovi amministratori del dispositivo, nuovi lettori di notifiche e app installate da APK con permessi sensibili. Tutto resta nel telefono."),
+            tr("A intervalli regolari (di solito 30 minuti, lo cambi in Impostazioni avvisi) l'app controlla in silenzio se è comparso qualcosa di nuovo e ti manda una notifica. Controlla: app spia note, nuovi servizi di accessibilità, nuovi amministratori del dispositivo, nuovi lettori di notifiche e app installate da APK con permessi sensibili. Tutto resta nel telefono."),
             size = 12f, color = grey
         )
         val on = Watch.isEnabled(this)
@@ -746,6 +797,20 @@ class MainActivity : Activity() {
         cb.setOnCheckedChangeListener { _, v -> Watch.setAlertNewApk(this, v) }
         box.addView(cb)
 
+        text(
+            tr("La frequenza è indicativa: Android può ritardare i controlli per risparmiare batteria, e alcuni telefoni li limitano ancora di più."),
+            size = 12f, color = grey, pad = 4
+        )
+        if (Watch.isStale(this)) {
+            text(
+                tr("[!!] L'ultimo controllo è molto più vecchio del previsto: il telefono sta probabilmente limitando l'app. Imposta il risparmio energetico su \"Nessuna restrizione\" (pulsante più sotto)."),
+                size = 13f, color = orange, pad = 6
+            )
+        }
+        val fail = Watch.lastFailure(this)
+        if (fail != 0L && fail >= Watch.prefs(this).getLong("st_time", 0L)) {
+            text(tr("[!!] Ultimo controllo non riuscito: ") + DateFormat.format("dd/MM/yyyy HH:mm", Date(fail)), size = 13f, color = orange, pad = 4)
+        }
         val t = Watch.prefs(this).getLong("st_time", 0L)
         if (t == 0L) {
             text(tr("Nessun controllo eseguito finora."), size = 13f, color = grey, pad = 8)
@@ -823,6 +888,595 @@ class MainActivity : Activity() {
                 // ignora
             }
             runOnUiThread { if (screen == "watch") showWatch() }
+        }
+    }
+
+    // ---------- File grandi e vecchi / cartelle orfane ----------
+
+    private var bigMb = 100
+    private var bigDays = 90
+
+    private fun showBigHome() {
+        screen = "bigHome"
+        box.removeAllViews()
+        title(tr("FILE_GRANDI_E_VECCHI"))
+        text(
+            tr("Cerca i file pesanti che non modifichi da tempo (video, archivi, installer…). Vedi l'elenco e confermi tu prima di eliminare."),
+            size = 13f, color = grey
+        )
+        if (!Cleaner.hasAllFiles()) {
+            text(tr("[NO] Accesso ai file: non concesso"), color = red, bold = true, pad = 10)
+            button(tr("[>] Concedi accesso a tutti i file")) {
+                try {
+                    startActivity(Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, Uri.parse("package:$packageName")))
+                } catch (e: Exception) {
+                    openSettings(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                }
+            }
+            backButton()
+            return
+        }
+        section(tr("DIMENSIONE MINIMA"))
+        for (m in listOf(50, 100, 500)) button((if (m == bigMb) "[x] " else "[ ] ") + m + " MB") { bigMb = m; showBigHome() }
+        section(tr("NON MODIFICATI DA"))
+        for (d in listOf(30, 90, 365)) button((if (d == bigDays) "[x] " else "[ ] ") + trf("%s giorni", d)) { bigDays = d; showBigHome() }
+        button(tr("[>] Avvia scansione")) { startBigScan() }
+        backButton()
+    }
+
+    private fun startBigScan() {
+        token++
+        val my = token
+        screen = "bigScan"
+        box.removeAllViews()
+        title(tr("FILE_GRANDI_E_VECCHI"))
+        text(tr("Scansione in corso…"), color = grey)
+        button(tr("[x] Annulla")) { showBigHome() }
+        val mb = bigMb
+        val days = bigDays
+        work {
+            val res = try {
+                Cleaner.scanBigOld(mb, days)
+            } catch (e: java.util.concurrent.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                emptyList()
+            }
+            runOnUiThread { if (my == token) showBigReport(res) }
+        }
+    }
+
+    private fun showBigReport(files: List<java.io.File>) {
+        screen = "bigReport"
+        box.removeAllViews()
+        title(tr("FILE_GRANDI_E_VECCHI"))
+        if (files.isEmpty()) {
+            text(tr("Nessun file trovato con questi criteri."), color = green)
+            button(tr("[<] Cambia criteri")) { showBigHome() }
+            backButton()
+            return
+        }
+        val chosen = HashSet<java.io.File>()
+        val stamps = files.associateWith { Pair(it.length(), it.lastModified()) }
+        val total = text("", size = 13f, color = orange, bold = true, pad = 8)
+        fun upd() {
+            total.text = trf("Selezionati: %s file, %s", chosen.size, fmt(chosen.sumOf { it.length() }))
+        }
+        text(tr("Spunta i file da eliminare (i più pesanti per primi)."), size = 12f, color = grey)
+        val root = android.os.Environment.getExternalStorageDirectory().absolutePath
+        for (f in files) {
+            val age = ((System.currentTimeMillis() - f.lastModified()) / (24L * 3600L * 1000L)).toInt()
+            check(f.name + "\n" + fmt(f.length()) + " - " + trf("%s giorni", age) + "\n" + (f.parent ?: "").removePrefix(root), false) {
+                if (it) chosen.add(f) else chosen.remove(f)
+                upd()
+            }
+        }
+        upd()
+        button(tr("[>] Elimina i selezionati")) {
+            if (chosen.isEmpty()) {
+                Toast.makeText(this, tr("Nessun file selezionato."), Toast.LENGTH_SHORT).show()
+            } else {
+                val sel = chosen.toList()
+                AlertDialog.Builder(this)
+                    .setTitle(tr("Eliminare questi file?"))
+                    .setMessage(
+                        trf("%s file, %s. ", sel.size, fmt(sel.sumOf { it.length() })) +
+                            if (Trash.active(this)) tr("Vanno nel cestino e puoi ripristinarli.") else tr("L'operazione non si può annullare.")
+                    )
+                    .setPositiveButton(tr("Elimina")) { _, _ ->
+                        val app = applicationContext
+                        work {
+                            val r = Cleaner.deleteFiles(app, sel, stamps)
+                            runOnUiThread {
+                                Toast.makeText(
+                                    this,
+                                    trf(if (Trash.active(this)) "Spostati nel cestino: %s (%s non spostati)" else "Liberati %s (%s non eliminati)", fmt(r.first), r.second),
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                showBigHome()
+                            }
+                        }
+                    }
+                    .setNegativeButton(tr("Annulla"), null)
+                    .show()
+            }
+        }
+        backButton()
+    }
+
+    private fun showOrphanHome() {
+        screen = "orphanHome"
+        box.removeAllViews()
+        title(tr("APP_DISINSTALLATE"))
+        text(
+            tr("Cerca cartelle con nome da app Android (per esempio com.nome.app) di app che non sono più installate. Sono solo indizi: guarda l'elenco prima di eliminare. Le cartelle interne di Android/data non sono raggiungibili da nessuna app."),
+            size = 13f, color = grey
+        )
+        if (!Cleaner.hasAllFiles()) {
+            text(tr("[NO] Accesso ai file: non concesso"), color = red, bold = true, pad = 10)
+            button(tr("[>] Concedi accesso a tutti i file")) {
+                try {
+                    startActivity(Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, Uri.parse("package:$packageName")))
+                } catch (e: Exception) {
+                    openSettings(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                }
+            }
+            backButton()
+            return
+        }
+        button(tr("[>] Avvia scansione")) { startOrphanScan() }
+        backButton()
+    }
+
+    private fun startOrphanScan() {
+        token++
+        val my = token
+        screen = "orphanScan"
+        box.removeAllViews()
+        title(tr("APP_DISINSTALLATE"))
+        text(tr("Scansione in corso…"), color = grey)
+        button(tr("[x] Annulla")) { showOrphanHome() }
+        work {
+            val res = try {
+                Cleaner.orphanDirs(this)
+            } catch (e: java.util.concurrent.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                emptyList()
+            }
+            runOnUiThread { if (my == token) showOrphanReport(res) }
+        }
+    }
+
+    private fun showOrphanReport(list: List<Pair<java.io.File, Long>>) {
+        screen = "orphanReport"
+        box.removeAllViews()
+        title(tr("APP_DISINSTALLATE"))
+        if (list.isEmpty()) {
+            text(tr("Nessuna cartella sospetta trovata."), color = green)
+            backButton()
+            return
+        }
+        val chosen = HashSet<java.io.File>()
+        val sizes = list.toMap()
+        val total = text("", size = 13f, color = orange, bold = true, pad = 8)
+        fun upd() {
+            total.text = trf("Selezionate: %s cartelle, %s", chosen.size, fmt(chosen.sumOf { sizes[it] ?: 0L }))
+        }
+        text(tr("Controlla: se la cartella contiene dati che ti servono (per esempio i backup di un'app), non selezionarla."), size = 12f, color = grey)
+        val root = android.os.Environment.getExternalStorageDirectory().absolutePath
+        for ((d, sz) in list) {
+            check(d.name + "\n" + fmt(sz) + "  " + (d.parent ?: "").removePrefix(root), false) {
+                if (it) chosen.add(d) else chosen.remove(d)
+                upd()
+            }
+        }
+        upd()
+        button(tr("[>] Elimina le selezionate")) {
+            if (chosen.isEmpty()) {
+                Toast.makeText(this, tr("Nessuna cartella selezionata."), Toast.LENGTH_SHORT).show()
+            } else {
+                val sel = chosen.toList()
+                AlertDialog.Builder(this)
+                    .setTitle(tr("Eliminare queste cartelle?"))
+                    .setMessage(
+                        if (Trash.active(this)) {
+                            trf("%s cartelle, %s, con tutto il loro contenuto. Vanno nel cestino e puoi ripristinarle.", sel.size, fmt(sel.sumOf { sizes[it] ?: 0L }))
+                        } else {
+                            trf("%s cartelle, %s, con tutto il loro contenuto. L'operazione non si può annullare.", sel.size, fmt(sel.sumOf { sizes[it] ?: 0L }))
+                        }
+                    )
+                    .setPositiveButton(tr("Elimina")) { _, _ ->
+                        work {
+                            var fail = 0
+                            if (Trash.active(this)) {
+                                fail = Trash.moveAll(applicationContext, sel).second
+                            } else {
+                                for (d in sel) if (!Cleaner.deleteTree(d)) fail++
+                            }
+                            runOnUiThread {
+                                Toast.makeText(this, trf("Fatto (%s non eliminate)", fail), Toast.LENGTH_LONG).show()
+                                showOrphanHome()
+                            }
+                        }
+                    }
+                    .setNegativeButton(tr("Annulla"), null)
+                    .show()
+            }
+        }
+        backButton()
+    }
+
+    // ---------- Cestino ----------
+
+    private fun showTrash() {
+        screen = "trash"
+        box.removeAllViews()
+        title(tr("CESTINO"))
+        text(
+            tr("I file eliminati dalle pulizie finiscono qui e restano recuperabili. Dopo il numero di giorni scelto in Impostazioni avvisi vengono cancellati davvero."),
+            size = 13f, color = grey
+        )
+        if (!Cleaner.hasAllFiles()) {
+            text(tr("[NO] Accesso ai file: non concesso"), color = red, bold = true, pad = 10)
+            allFilesButton()
+            backButton()
+            return
+        }
+        text(
+            (if (Trash.enabled(this)) tr("[OK] Cestino attivo") else tr("[--] Cestino spento: le pulizie eliminano subito")) +
+                trf(" - %s giorni", Trash.days(this)),
+            color = if (Trash.enabled(this)) green else orange, bold = true, pad = 8
+        )
+        val list = Trash.batches(this)
+        if (list.isEmpty()) {
+            text(tr("Il cestino è vuoto."), color = grey, pad = 8)
+        } else {
+            text(trf("Occupa %s.", fmt(list.sumOf { it.bytes })), size = 13f, color = orange, pad = 8)
+            for (b in list) {
+                text(
+                    DateFormat.format("dd/MM/yyyy HH:mm", Date(b.batch)).toString() + "\n" + trf("%s elementi, %s", b.count, fmt(b.bytes)),
+                    size = 13f, pad = 6
+                )
+                button(tr("[>] Ripristina")) {
+                    val app = applicationContext
+                    work {
+                        val n = Trash.restore(app, b.batch)
+                        runOnUiThread {
+                            Toast.makeText(
+                                this,
+                                trf("Ripristinati %s elementi", n.first) + if (n.second > 0) trf(" (%s non ripristinati)", n.second) else "",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            showTrash()
+                        }
+                    }
+                }
+            }
+            button(tr("[>] Svuota il cestino adesso")) {
+                AlertDialog.Builder(this)
+                    .setTitle(tr("Svuotare il cestino?"))
+                    .setMessage(tr("I file verranno eliminati definitivamente. L'operazione non si può annullare."))
+                    .setPositiveButton(tr("Elimina")) { _, _ ->
+                        val app = applicationContext
+                        work {
+                            val f = Trash.purge(app, true)
+                            runOnUiThread {
+                                Toast.makeText(this, tr("Spazio liberato: ") + fmt(f), Toast.LENGTH_LONG).show()
+                                showTrash()
+                            }
+                        }
+                    }
+                    .setNegativeButton(tr("Annulla"), null)
+                    .show()
+            }
+        }
+        backButton()
+    }
+
+    // ---------- Elenco app spia da file / esporta elenco app ----------
+
+    private fun showSpyDb() {
+        screen = "spyDb"
+        box.removeAllViews()
+        title(tr("ELENCO_APP_SPIA"))
+        val (p, c) = Stalker.load(this)
+        text(
+            tr("Elenco in uso: ") + (if (Stalker.isCustom(this)) tr("importato da te") else tr("incluso nell'app")) +
+                "\n" + trf("%s app e %s firme note", p.size, c.size),
+            size = 14f, color = green, bold = true, pad = 8
+        )
+        text(
+            tr("Puoi aggiornare l'elenco senza Internet: scarica dal sito di Echap (github.com/AssoEchap/stalkerware-indicators) il file ioc.yaml, poi sceglilo qui. Il file non viene inviato da nessuna parte."),
+            size = 12f, color = grey
+        )
+        button(tr("[>] Scegli il file dell'elenco")) {
+            val i = Intent(Intent.ACTION_OPEN_DOCUMENT)
+            i.addCategory(Intent.CATEGORY_OPENABLE)
+            i.type = "*/*"
+            try {
+                startActivityForResult(i, 7)
+            } catch (e: Exception) {
+                Toast.makeText(this, tr("Nessun gestore di file disponibile."), Toast.LENGTH_LONG).show()
+            }
+        }
+        if (Stalker.isCustom(this)) {
+            button(tr("[>] Torna all'elenco incluso")) {
+                Stalker.resetToBundled(this)
+                showSpyDb()
+            }
+        }
+        backButton()
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != 7 || resultCode != RESULT_OK) return
+        val uri = data?.data ?: return
+        val app = applicationContext
+        work {
+            val res = try {
+                val txt = contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+                if (txt == null || txt.length > 8_000_000) null else Stalker.import(app, txt)
+            } catch (e: Exception) {
+                null
+            }
+            runOnUiThread {
+                if (res == null) {
+                    Toast.makeText(this, tr("File non valido: l'elenco precedente resta in uso."), Toast.LENGTH_LONG).show()
+                } else {
+                    Toast.makeText(this, trf("Importati: %s app, %s firme", res.first, res.second), Toast.LENGTH_LONG).show()
+                }
+                showSpyDb()
+            }
+        }
+    }
+
+    private fun exportApps() {
+        Toast.makeText(this, tr("Preparo l'elenco…"), Toast.LENGTH_SHORT).show()
+        val app = applicationContext
+        work {
+            val sb = StringBuilder()
+            try {
+                val pm = packageManager
+                val flags = PackageManager.GET_PERMISSIONS or PackageManager.GET_SIGNING_CERTIFICATES
+                val pkgs = if (Build.VERSION.SDK_INT >= 33) pm.getInstalledPackages(PackageManager.PackageInfoFlags.of(flags.toLong())) else pm.getInstalledPackages(flags)
+                sb.append("GhostALO - ").append(tr("elenco delle app")).append(" ").append(DateFormat.format("dd/MM/yyyy HH:mm", Date())).append("\n\n")
+                for (p in pkgs.sortedBy { it.packageName }) {
+                    val ai = p.applicationInfo ?: continue
+                    val sys = (ai.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+                    val inst = try { pm.getInstallSourceInfo(p.packageName).installingPackageName } catch (e: Exception) { null }
+                    sb.append(pm.getApplicationLabel(ai)).append(" | ").append(p.packageName)
+                        .append(" | v").append(p.versionName ?: "?")
+                        .append(" | ").append(if (sys) "system" else "user")
+                        .append(" | ").append(inst ?: "-")
+                        .append(" | ").append(Stalker.certHashes(p).joinToString("+").take(16))
+                        .append('\n')
+                }
+            } catch (e: Exception) {
+                // elenco parziale
+            }
+            val text = sb.toString()
+            runOnUiThread {
+                try {
+                    if (Cleaner.hasAllFiles()) {
+                        val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                        dir.mkdirs()
+                        val f = java.io.File(dir, "GhostALO_app_" + DateFormat.format("yyyyMMdd_HHmm", Date()) + ".txt")
+                        f.writeText(text)
+                        Toast.makeText(this, tr("Salvato in Download: ") + f.name, Toast.LENGTH_LONG).show()
+                    } else {
+                        val i = Intent(Intent.ACTION_SEND)
+                        i.type = "text/plain"
+                        i.putExtra(Intent.EXTRA_SUBJECT, "GhostALO - " + tr("elenco delle app"))
+                        i.putExtra(Intent.EXTRA_TEXT, text)
+                        startActivity(Intent.createChooser(i, tr("Condividi")))
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(this, tr("Impossibile salvare l'elenco."), Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
+    // ---------- Cookie e tracciamento ----------
+
+    private val browsers = listOf(
+        "com.android.chrome", "org.mozilla.firefox", "org.mozilla.firefox_beta", "org.mozilla.focus",
+        "com.sec.android.app.sbrowser", "com.brave.browser", "com.duckduckgo.mobile.android",
+        "com.microsoft.emmx", "com.opera.browser", "com.vivaldi.browser", "com.kiwibrowser.browser",
+        "com.heytap.browser", "com.mi.globalbrowser", "com.android.browser"
+    )
+
+    private fun showCookies() {
+        screen = "cookies"
+        box.removeAllViews()
+        title(tr("COOKIE_E_TRACCIAMENTO"))
+        text(
+            tr("I cookie stanno dentro ogni browser e Android non permette ad altre app di leggerli o cancellarli. Questa app non può farlo al posto tuo, ma ti porta dove si fa."),
+            size = 13f, color = grey
+        )
+        section(tr("I TUOI BROWSER"))
+        var n = 0
+        for (pk in browsers) {
+            val label = try {
+                packageManager.getApplicationLabel(packageManager.getApplicationInfo(pk, 0)).toString()
+            } catch (e: Exception) {
+                null
+            } ?: continue
+            n++
+            button(trf("[>] %s\n     apri la scheda: Spazio → Cancella dati", label)) { openApp(pk) }
+        }
+        if (n == 0) text(tr("Nessun browser noto trovato."), size = 13f, color = grey)
+        text(
+            tr("Attenzione: \"Cancella dati\" elimina anche cronologia e accessi ai siti (ti sloghi ovunque). \"Svuota cache\" invece non tocca gli accessi."),
+            size = 12f, color = orange, pad = 8
+        )
+        section(tr("CONSIGLI"))
+        text(
+            tr("- Blocca i cookie di terze parti: sono quelli che ti seguono da un sito all'altro. In Chrome: Impostazioni > Privacy e sicurezza > Cookie di terze parti > Blocca.\n- Chrome: usa anche \"Elimina dati di navigazione\" e scegli cookie e dati dei siti.\n- Firefox: Impostazioni > Elimina dati di navigazione all'uscita.\n- Brave e DuckDuckGo bloccano molti tracker già di base.\n- La navigazione in incognito non salva i cookie dopo la chiusura delle schede."),
+            size = 13f, color = dark
+        )
+        backButton()
+    }
+
+    // ---------- Impostazioni, app fidate, storico, report errori ----------
+
+    private fun check(label: String, value: Boolean, onChange: (Boolean) -> Unit) {
+        val cb = CheckBox(this)
+        cb.text = label
+        cb.setTextColor(green)
+        cb.setTypeface(Typeface.MONOSPACE, Typeface.BOLD)
+        cb.textSize = 13f
+        cb.buttonTintList = ColorStateList.valueOf(green)
+        cb.isChecked = value
+        cb.setOnCheckedChangeListener { _, v -> onChange(v) }
+        box.addView(cb)
+    }
+
+    private fun showSettings() {
+        screen = "settings"
+        box.removeAllViews()
+        title(tr("IMPOSTAZIONI"))
+        section(tr("OGNI QUANTO CONTROLLARE"))
+        val cur = Watch.periodMin(this)
+        val opts = listOf(
+            Pair(15, tr("15 minuti")),
+            Pair(30, tr("30 minuti")),
+            Pair(60, tr("1 ora")),
+            Pair(360, tr("6 ore"))
+        )
+        for ((m, name) in opts) {
+            button((if (m == cur) "[x] " else "[ ] ") + name) {
+                Watch.setPeriodMin(this, m)
+                showSettings()
+            }
+        }
+        text(tr("Più spesso = avvisi più rapidi, ma un po' più di batteria."), size = 12f, color = grey)
+        section(tr("DI COSA AVVISARMI"))
+        text(tr("Le app spia note ti vengono sempre segnalate."), size = 12f, color = grey)
+        check(tr("Nuovo servizio di accessibilità"), Watch.toggle(this, "alert_acc")) { Watch.setToggle(this, "alert_acc", it) }
+        check(tr("Nuovo amministratore del dispositivo"), Watch.toggle(this, "alert_adm")) { Watch.setToggle(this, "alert_adm", it) }
+        check(tr("Nuovo lettore di notifiche"), Watch.toggle(this, "alert_lst")) { Watch.setToggle(this, "alert_lst", it) }
+        check(tr("App da APK con permessi sensibili"), Watch.toggle(this, "alert_risk")) { Watch.setToggle(this, "alert_risk", it) }
+        check(tr("Nuovo permesso sensibile su app già installata"), Watch.toggle(this, "alert_perm")) { Watch.setToggle(this, "alert_perm", it) }
+        check(tr("Avvisa anche per ogni nuova app installata da APK"), Watch.alertNewApk(this)) { Watch.setAlertNewApk(this, it) }
+        check(tr("Firma di un'app cambiata"), Watch.toggle(this, "alert_sig")) { Watch.setToggle(this, "alert_sig", it) }
+        section(tr("CESTINO"))
+        check(tr("Sposta nel cestino invece di eliminare subito"), Trash.enabled(this)) { Trash.setEnabled(this, it) }
+        val td = Trash.days(this)
+        for (d in listOf(7, 30)) {
+            button((if (d == td) "[x] " else "[ ] ") + trf("Svuota dopo %s giorni", d)) {
+                Trash.setDays(this, d)
+                showSettings()
+            }
+        }
+        button(tr("[>] App fidate")) { showTrusted() }
+        button(tr("[>] Storico avvisi")) { showHistory() }
+        backButton()
+    }
+
+    private fun showTrusted() {
+        token++
+        val my = token
+        screen = "trusted"
+        box.removeAllViews()
+        title(tr("APP_FIDATE"))
+        text(
+            tr("Per le app qui segnate non ricevi più avvisi (le app spia note vengono segnalate comunque). Sono elencate le app che in questo momento potrebbero far scattare un avviso."),
+            size = 12f, color = grey
+        )
+        text(tr("Controllo…"), color = grey)
+        work {
+            val snap = try {
+                Watch.snapshot(this)
+            } catch (e: Exception) {
+                null
+            }
+            runOnUiThread { if (my == token) fillTrusted(snap) }
+        }
+    }
+
+    private fun fillTrusted(snap: Snap?) {
+        box.removeAllViews()
+        title(tr("APP_FIDATE"))
+        if (snap == null) {
+            text(tr("Non sono riuscito a completare il controllo."), color = red)
+            backButton()
+            return
+        }
+        val trusted = Watch.trusted(this)
+        val all = HashSet<String>()
+        all.addAll(snap.acc); all.addAll(snap.admin); all.addAll(snap.listeners)
+        all.addAll(snap.risk); all.addAll(snap.side)
+        all.addAll(trusted.filter { it in snap.installed })
+        all.removeAll(snap.spy)
+        if (all.isEmpty()) {
+            text(tr("Nessuna app da segnare: tutto tranquillo."), color = green)
+        }
+        for (p in all.sortedBy { (snap.labels[it] ?: it).lowercase() }) {
+            val tags = ArrayList<String>()
+            if (p in snap.acc) tags.add(tr("accessibilità"))
+            if (p in snap.admin) tags.add("admin")
+            if (p in snap.listeners) tags.add(tr("legge notifiche"))
+            if (p in snap.risk) tags.add(tr("permessi sensibili"))
+            if (p in snap.side && tags.isEmpty()) tags.add("APK")
+            check((snap.labels[p] ?: p) + (if (tags.isEmpty()) "" else "\n" + tags.joinToString(", ")), p in trusted) {
+                Watch.setTrusted(this, p, it)
+            }
+        }
+        backButton()
+    }
+
+    private fun showHistory() {
+        screen = "history"
+        box.removeAllViews()
+        title(tr("STORICO_AVVISI"))
+        val list = Watch.history(this)
+        if (list.isEmpty()) {
+            text(tr("Nessun avviso finora."), color = grey)
+        } else {
+            text(trf("Ultimi %s avvisi, dal più recente.", list.size), size = 12f, color = grey)
+            for (h in list) {
+                text(
+                    (if (h.high) "[!!] " else "[i] ") + DateFormat.format("dd/MM/yyyy HH:mm", Date(h.time)) +
+                        "\n" + h.title + "\n" + h.text,
+                    size = 13f, color = if (h.high) orange else dark, pad = 7
+                )
+                val pk = h.pkg
+                if (pk != null) button(tr("[>] Apri la scheda dell'app")) { openApp(pk) }
+            }
+            button(tr("[>] Cancella lo storico")) {
+                Watch.clearHistory(this)
+                showHistory()
+            }
+        }
+        backButton()
+    }
+
+    private fun offerCrashReport() {
+        val rep = Crash.pending(this) ?: return
+        try {
+            AlertDialog.Builder(this)
+                .setTitle(tr("L'app si è chiusa in modo imprevisto"))
+                .setMessage(tr("Ho salvato un rapporto dell'errore nel telefono. Non è stato inviato da nessuna parte. Vuoi condividerlo (per esempio via e-mail) per aiutare a correggerlo?"))
+                .setPositiveButton(tr("Condividi")) { _, _ ->
+                    val i = Intent(Intent.ACTION_SEND)
+                    i.type = "text/plain"
+                    i.putExtra(Intent.EXTRA_SUBJECT, "GhostALO - crash report")
+                    i.putExtra(Intent.EXTRA_TEXT, rep)
+                    try {
+                        startActivity(Intent.createChooser(i, tr("Condividi")))
+                    } catch (e: Exception) {
+                        // niente da fare
+                    }
+                    Crash.clear(this)
+                }
+                .setNegativeButton(tr("Elimina")) { _, _ -> Crash.clear(this) }
+                .setNeutralButton(tr("Più tardi"), null)
+                .show()
+        } catch (e: Exception) {
+            // ignora
         }
     }
 
@@ -908,6 +1562,19 @@ class MainActivity : Activity() {
             size = 12f, color = grey
         )
         button(tr("[>] Libera cache di sistema")) { startFreeCache() }
+        section(tr("APPUNTI"))
+        text(
+            tr("Svuota il testo copiato (per esempio password o codici). Non cancella la cronologia della tastiera."),
+            size = 12f, color = grey
+        )
+        button(tr("[>] Cancella gli appunti")) {
+            try {
+                (getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).clearPrimaryClip()
+                Toast.makeText(this, tr("Appunti cancellati."), Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(this, tr("Impossibile cancellare gli appunti."), Toast.LENGTH_SHORT).show()
+            }
+        }
         backButton()
     }
 
@@ -1101,8 +1768,12 @@ class MainActivity : Activity() {
         AlertDialog.Builder(this)
             .setTitle(tr("Conferma eliminazione"))
             .setMessage(
-                trf("Verranno eliminati definitivamente %s elementi (", n) + fmt(b) +
-                    tr("). L'operazione non si può annullare.")
+                if (Trash.active(this)) {
+                    trf("%s elementi (", n) + fmt(b) + trf(") verranno spostati nel cestino e restano recuperabili per %s giorni.", Trash.days(this))
+                } else {
+                    trf("Verranno eliminati definitivamente %s elementi (", n) + fmt(b) +
+                        tr("). L'operazione non si può annullare.")
+                }
             )
             .setPositiveButton(tr("Elimina")) { _, _ -> doDelete(sel, again) }
             .setNegativeButton(tr("Annulla"), null)
@@ -1122,7 +1793,12 @@ class MainActivity : Activity() {
                 if (my == token) {
                     box.removeAllViews()
                     title(tr("PULIZIA_COMPLETATA"))
-                    text(tr("Spazio liberato: ") + fmt(res.first), size = 20f, color = green, bold = true, pad = 8)
+                    if (Trash.active(this)) {
+                        text(tr("Spostati nel cestino: ") + fmt(res.first), size = 20f, color = green, bold = true, pad = 8)
+                        text(tr("Lo spazio si libera quando il cestino viene svuotato (da Pulizia > Cestino o in automatico)."), size = 12f, color = grey)
+                    } else {
+                        text(tr("Spazio liberato: ") + fmt(res.first), size = 20f, color = green, bold = true, pad = 8)
+                    }
                     if (res.second > 0) {
                         text(res.second.toString() + tr(" file non è stato possibile eliminarli."), color = orange)
                     }
