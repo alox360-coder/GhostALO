@@ -124,7 +124,7 @@ jobs:
           - **Permessi: chi usa cosa**: per ogni permesso (fotocamera, microfono, posizione, SMS…) le app che lo hanno, con collegamento alla loro scheda.
           - **Controllo degli APK scaricati**: controlla i file .apk prima dell'installazione (app spia note, firma diversa, permessi sensibili).
           - **Avvisi in background**: ogni 30 minuti circa controlla in silenzio e manda una notifica se compare un'app spia nota, un nuovo servizio di accessibilità, un nuovo amministratore del dispositivo, un nuovo lettore di notifiche o un'app installata da APK con permessi sensibili.
-          - **Widget** per la schermata Home con lo stato di sicurezza e un tasto per aggiornarlo.
+          - **Widget** per la schermata Home: una tessera piccola (1x1, come un'icona) con OK, !! o XX e una versione estesa con i dettagli.
 
           ## Privacy
 
@@ -187,7 +187,7 @@ jobs:
                   targetSdk = 34
                   // Il numero di build di GitHub garantisce versionCode sempre crescente.
                   versionCode = 100 + (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0)
-                  versionName = "4.4"
+                  versionName = "4.6"
               }
 
               signingConfigs {
@@ -267,8 +267,21 @@ jobs:
                       android:permission="android.permission.BIND_JOB_SERVICE" />
 
                   <receiver
+                      android:name=".StatusWidgetSmall"
+                      android:exported="false"
+                      android:label="@string/widget_label_small">
+                      <intent-filter>
+                          <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                      </intent-filter>
+                      <meta-data
+                          android:name="android.appwidget.provider"
+                          android:resource="@xml/status_widget_small_info" />
+                  </receiver>
+
+                  <receiver
                       android:name=".StatusWidget"
-                      android:exported="false">
+                      android:exported="false"
+                      android:label="@string/widget_label_big">
                       <intent-filter>
                           <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                       </intent-filter>
@@ -559,7 +572,6 @@ jobs:
           "TASTIERE ABILITATE": "ENABLED KEYBOARDS",
           "TRACKER PIU DIFFUSI": "MOST COMMON TRACKERS",
           "Tastiera di terze parti (vede ciò che scrivi)": "Third-party keyboard (sees what you type)",
-          "Tieni premuto su uno spazio vuoto della schermata Home, scegli Widget e cerca \"GhostALO\". Mostra lo stato (OK, da verificare, app spia) e il tasto [R] per aggiornarlo. Toccando il widget si apre l'app.": "Long-press an empty spot on the Home screen, choose Widgets and look for \"GhostALO\". It shows the status (OK, to check, spy app) and the [R] button to refresh it. Tapping the widget opens the app.",
           "Tocca l'app nell'elenco qui sotto per aprirne la scheda e disinstallarla. ATTENZIONE: se sospetti che l'abbia installata un partner o un familiare violento, rimuoverla potrebbe avvisarlo. Valuta prima di contattare un centro antiviolenza (in Italia: 1522, gratuito e attivo 24 ore su 24).": "Tap the app in the list below to open its page and uninstall it. WARNING: if you suspect it was installed by a violent partner or relative, removing it might alert them. Consider contacting a domestic-violence support center first (in Italy: 1522, free and open 24 hours a day).",
           "Tocca un'app per aprire la sua scheda.": "Tap an app to open its page.",
           "Tocca un'app per aprire la sua scheda. Se non la riconosci, controlla da dove viene e valuta di disinstallarla.": "Tap an app to open its page. If you do not recognize it, check where it comes from and consider uninstalling it.",
@@ -644,7 +656,6 @@ jobs:
           "[OK] Statistiche di utilizzo: concesse": "[OK] Usage statistics: granted",
           "[OK] TUTTO A POSTO": "[OK] ALL GOOD",
           "[P] Privacy\n     permessi, tracker, rete, profili": "[P] Privacy\n     permissions, trackers, network, profiles",
-          "[S] Sicurezza\n     dispositivo, app spia, app nascoste, APK": "[S] Security\n     device, spy apps, hidden apps, APKs",
           "[T] Strumenti\n     avvisi in background, widget": "[T] Tools\n     background alerts, widget",
           "[XX] APP SPIA NOTE RILEVATE: ": "[XX] KNOWN SPY APPS DETECTED: ",
           "[XX] PROBLEMI DA RISOLVERE (": "[XX] PROBLEMS TO FIX (",
@@ -764,7 +775,9 @@ jobs:
           "Nuovo servizio di accessibilità": "New accessibility service",
           "Se vedi questo messaggio, le notifiche funzionano.": "If you see this message, notifications work.",
           "… e altri ": "… and others: ",
-          "Versione": "Version"
+          "Versione": "Version",
+          "[S] Sicurezza\n     dispositivo, app spia, APK": "[S] Security\n     device, spy apps, APKs",
+          "Per mettere una tessera piccola sulla Home: tieni premuto su uno spazio vuoto, scegli Widget e cerca \"GhostALO (icona piccola)\": occupa un solo riquadro e mostra OK, !! o XX. La versione \"esteso\" mostra più dettagli e il tasto [R]. L'icona normale dell'app si trascina dal menu delle app.": "To put a small tile on the Home screen: long-press an empty spot, choose Widgets and look for \"GhostALO (small icon)\": it takes a single square and shows OK, !! or XX. The \"extended\" version shows more details and the [R] button. The normal app icon can be dragged from the app drawer."
           }
           EOF_PRJ
           mkdir -p "$(dirname 'app/src/main/assets/stalkerware.txt')"
@@ -2347,6 +2360,7 @@ jobs:
                           } else if (e.isFile) {
                               val len = e.length()
                               val lower = e.name.lowercase()
+                              if (lower == ".nomedia") continue
                               val ext = lower.substringAfterLast('.', "")
                               if (cur.thumbs || lower.startsWith(".thumbdata")) {
                                   thumbs.files.add(e)
@@ -2385,7 +2399,7 @@ jobs:
                       }
                   }
 
-                  return listOf(apk, temp, thumbs, empty, dup).filter { it.count > 0 }
+                  return listOf(apk, temp, thumbs, empty, dup).filter { it.count > 0 && (it.bytes > 0L || it.dirs.isNotEmpty()) }
               }
 
               /** Elimina i file delle categorie. Restituisce (byte liberati, file non eliminati). */
@@ -2932,12 +2946,12 @@ jobs:
                   screen = "intro"
                   box.removeAllViews()
                   text("> GhostALO_", size = 26f, color = green, bold = true, pad = 4)
-                  text(tr("Versione") + " 4.4", size = 12f, color = grey, pad = 1)
+                  text(tr("Versione") + " 4.6", size = 12f, color = grey, pad = 1)
                   text(tr("Nessun accesso a Internet: i dati restano nel telefono."), size = 12f, color = grey, pad = 1)
                   sep()
                   button(tr("[>] CONTROLLO RAPIDO\n     un tocco: dice se è tutto a posto")) { startQuick() }
                   text(tr("Oppure scegli un'area:"), size = 12f, color = grey, pad = 8)
-                  button(tr("[S] Sicurezza\n     dispositivo, app spia, app nascoste, APK")) { showGroup("sec") }
+                  button(tr("[S] Sicurezza\n     dispositivo, app spia, APK")) { showGroup("sec") }
                   button(tr("[P] Privacy\n     permessi, tracker, rete, profili")) { showGroup("priv") }
                   button(tr("[C] Pulizia e prestazioni\n     file inutili, chat, spazio, batteria")) { showGroup("clean") }
                   button(tr("[T] Strumenti\n     avvisi in background, widget")) { showGroup("tools") }
@@ -3466,7 +3480,7 @@ jobs:
 
                   section("WIDGET")
                   text(
-                      tr("Tieni premuto su uno spazio vuoto della schermata Home, scegli Widget e cerca \"GhostALO\". Mostra lo stato (OK, da verificare, app spia) e il tasto [R] per aggiornarlo. Toccando il widget si apre l'app."),
+                      tr("Per mettere una tessera piccola sulla Home: tieni premuto su uno spazio vuoto, scegli Widget e cerca \"GhostALO (icona piccola)\": occupa un solo riquadro e mostra OK, !! o XX. La versione \"esteso\" mostra più dettagli e il tasto [R]. L'icona normale dell'app si trascina dal menu delle app."),
                       size = 13f, color = dark
                   )
                   backButton()
@@ -4722,7 +4736,7 @@ jobs:
                           reasons.add(tr("Installata fuori da un negozio ufficiale (APK manuale)"))
                       }
 
-                      if (score >= 2) {
+                      if (score >= 3) {
                           flagged.add(AppFinding(p.packageName, label, score, reasons))
                       } else {
                           quiet++
@@ -5206,7 +5220,7 @@ jobs:
                       penalty += 3
                       out.add(
                           Check(
-                              2, tr("Spegnimento schermo lento"), tr("Lo schermo resta acceso ") + (to / 1000) + tr(" secondi. Meglio 30-60."),
+                              1, tr("Spegnimento schermo lento"), tr("Lo schermo resta acceso ") + (to / 1000) + tr(" secondi. Meglio 30-60."),
                               Settings.ACTION_DISPLAY_SETTINGS
                           )
                       )
@@ -5363,9 +5377,43 @@ jobs:
                           val mgr = AppWidgetManager.getInstance(ctx)
                           val ids = mgr.getAppWidgetIds(ComponentName(ctx, StatusWidget::class.java))
                           for (id in ids) mgr.updateAppWidget(id, build(ctx))
+                          val small = mgr.getAppWidgetIds(ComponentName(ctx, StatusWidgetSmall::class.java))
+                          for (id in small) mgr.updateAppWidget(id, buildSmall(ctx))
                       } catch (e: Exception) {
                           // ignora
                       }
+                  }
+
+                  /** Tessera piccola, come un'icona: solo il codice di stato (OK, !!, XX, ??). */
+                  fun buildSmall(ctx: Context): RemoteViews {
+                      val rv = RemoteViews(ctx.packageName, R.layout.widget_small)
+                      val pr = Watch.prefs(ctx)
+                      val t = pr.getLong("st_time", 0L)
+                      val spy = pr.getInt("st_spy", 0)
+                      val others = pr.getInt("st_acc", 0) + pr.getInt("st_adm", 0) + pr.getInt("st_risk", 0)
+                      val code: String
+                      val color: Int
+                      if (t == 0L) {
+                          code = "??"
+                          color = grey
+                      } else if (spy > 0) {
+                          code = "XX"
+                          color = red
+                      } else if (others > 0) {
+                          code = "!!"
+                          color = orange
+                      } else {
+                          code = "OK"
+                          color = green
+                      }
+                      rv.setTextViewText(R.id.w_state, code)
+                      rv.setTextColor(R.id.w_state, color)
+                      val open = PendingIntent.getActivity(
+                          ctx, 2, Intent(ctx, MainActivity::class.java),
+                          PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                      )
+                      rv.setOnClickPendingIntent(R.id.w_root, open)
+                      return rv
                   }
 
                   fun build(ctx: Context): RemoteViews {
@@ -5415,6 +5463,23 @@ jobs:
                       )
                       rv.setOnClickPendingIntent(R.id.w_refresh, refresh)
                       return rv
+                  }
+              }
+          }
+          EOF_PRJ
+          mkdir -p "$(dirname 'app/src/main/java/it/privacycheck/StatusWidgetSmall.kt')"
+          cat > 'app/src/main/java/it/privacycheck/StatusWidgetSmall.kt' <<'EOF_PRJ'
+          package it.privacycheck
+
+          import android.appwidget.AppWidgetManager
+          import android.appwidget.AppWidgetProvider
+          import android.content.Context
+
+          /** Versione piccola del widget: una tessera 1x1 che si comporta come un'icona. */
+          class StatusWidgetSmall : AppWidgetProvider() {
+              override fun onUpdate(context: Context, manager: AppWidgetManager, appWidgetIds: IntArray) {
+                  for (id in appWidgetIds) {
+                      manager.updateAppWidget(id, StatusWidget.buildSmall(context))
                   }
               }
           }
@@ -6286,6 +6351,39 @@ jobs:
               <corners android:radius="8dp" />
           </shape>
           EOF_PRJ
+          mkdir -p "$(dirname 'app/src/main/res/layout/widget_small.xml')"
+          cat > 'app/src/main/res/layout/widget_small.xml' <<'EOF_PRJ'
+          <?xml version="1.0" encoding="utf-8"?>
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:id="@+id/w_root"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:background="@drawable/widget_bg"
+              android:gravity="center"
+              android:orientation="vertical"
+              android:padding="4dp">
+
+              <TextView
+                  android:id="@+id/w_title"
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:text="&gt;_"
+                  android:textColor="#00FF41"
+                  android:textSize="22sp"
+                  android:textStyle="bold"
+                  android:typeface="monospace" />
+
+              <TextView
+                  android:id="@+id/w_state"
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:text="??"
+                  android:textColor="#00A329"
+                  android:textSize="12sp"
+                  android:textStyle="bold"
+                  android:typeface="monospace" />
+          </LinearLayout>
+          EOF_PRJ
           mkdir -p "$(dirname 'app/src/main/res/layout/widget_status.xml')"
           cat > 'app/src/main/res/layout/widget_status.xml' <<'EOF_PRJ'
           <?xml version="1.0" encoding="utf-8"?>
@@ -6371,6 +6469,9 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
               <string name="widget_desc">Stato di sicurezza del telefono: app spia, accessibilità e amministratori.</string>
+              <string name="widget_small_desc">Tessera piccola come un\'icona: mostra OK, !! o XX. Toccala per aprire l\'app.</string>
+              <string name="widget_label_small">GhostALO (icona piccola)</string>
+              <string name="widget_label_big">GhostALO (esteso)</string>
           </resources>
           EOF_PRJ
           mkdir -p "$(dirname 'app/src/main/res/values/strings.xml')"
@@ -6378,6 +6479,9 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
               <string name="widget_desc">Phone security status: spy apps, accessibility and administrators.</string>
+              <string name="widget_small_desc">Small icon-like tile: shows OK, !! or XX. Tap to open the app.</string>
+              <string name="widget_label_small">GhostALO (small icon)</string>
+              <string name="widget_label_big">GhostALO (extended)</string>
           </resources>
           EOF_PRJ
           mkdir -p "$(dirname 'app/src/main/res/xml/status_widget_info.xml')"
@@ -6389,6 +6493,20 @@ jobs:
               android:minHeight="110dp"
               android:minWidth="180dp"
               android:resizeMode="horizontal|vertical"
+              android:updatePeriodMillis="0"
+              android:widgetCategory="home_screen" />
+          EOF_PRJ
+          mkdir -p "$(dirname 'app/src/main/res/xml/status_widget_small_info.xml')"
+          cat > 'app/src/main/res/xml/status_widget_small_info.xml' <<'EOF_PRJ'
+          <?xml version="1.0" encoding="utf-8"?>
+          <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+              android:description="@string/widget_small_desc"
+              android:initialLayout="@layout/widget_small"
+              android:minHeight="40dp"
+              android:minWidth="40dp"
+              android:resizeMode="none"
+              android:targetCellHeight="1"
+              android:targetCellWidth="1"
               android:updatePeriodMillis="0"
               android:widgetCategory="home_screen" />
           EOF_PRJ
