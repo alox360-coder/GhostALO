@@ -22,7 +22,7 @@
         android:id="@+id/w_state"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="??"
+        android:text="--"
         android:textColor="#00A329"
         android:textSize="12sp"
         android:textStyle="bold"
