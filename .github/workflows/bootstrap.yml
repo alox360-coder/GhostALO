@@ -115,15 +115,21 @@ jobs:
           - **Scansione privacy + app spia**: confronta le app installate con l'elenco pubblico di stalkerware noti (nomi di pacchetto e firme) e segnala permessi e servizi a rischio.
           - **Rilevatore di tracker**: cerca nel codice delle app le librerie pubblicitarie e di tracciamento più note.
           - **Pulizia**: APK già scaricati, file temporanei, miniature, cartelle vuote, duplicati, cache e app non usate da tempo. Ogni eliminazione richiede conferma. Il pulsante "Libera cache di sistema" chiede ad Android di fare spazio cancellando le cache delle altre app (il risultato dipende dal telefono).
+          - **File grandi e vecchi**: file pesanti non modificati da tempo (soglia a scelta), con elenco e conferma. **Cartelle di app disinstallate**: cartelle con nome da app non più installate (solo indizi). La pulizia include anche download incompleti e archivi vecchi in Download, e un tasto per cancellare gli appunti.
+          - **Cestino**: le pulizie spostano i file in una cartella recuperabile per 7 o 30 giorni (ripristino con un tocco). **Elenco app spia aggiornabile da file** (ioc.yaml di Echap, senza Internet). **Controllo firme**: avviso se la firma di un'app cambia. **Esporta elenco delle app** in un file di testo.
+          - **Risultati prudenti**: il controllo rapido distingue minaccia nota, da verificare e nessun indicatore, elenca i controlli eseguiti e quelli non completati. Prima di eliminare, l'app ricontrolla che i file non siano cambiati dopo la scansione.
           - **Pulizia WhatsApp e Telegram**: media ricevuti vecchi, note vocali, copie dei file inviati e stati già visti, con soglia a scelta (30-365 giorni). Le chat non vengono toccate; ogni eliminazione richiede conferma.
           - **Analisi dello spazio per tipo**: foto, video, audio, documenti, archivi e app con barre in stile terminale, più i file più grandi.
           - **App in background**: quali app hanno tenuto attivo un servizio in primo piano e per quanto, confrontato con l uso reale; collegamenti alle impostazioni di batteria di Android.
           - **App senza icona e cartelle nascoste**: elenca le app installate senza icona nel menu (con permessi e servizi) e le cartelle nascoste con foto o video. Solo indizi.
           - **Spazio privato e profili**: segnala se esistono altri profili (lavoro, clone, spazio privato) e porta alle impostazioni di Android.
           - **Rete Wi-Fi e reti pubbliche**: tipo di protezione del Wi-Fi, VPN, DNS privato e consigli. Non rileva attacchi man-in-the-middle.
+          - **Cookie e tracciamento**: elenco dei browser installati con collegamento alla loro scheda (dove si cancellano i dati) e consigli. L'app non può cancellare i cookie al posto tuo: Android lo vieta.
           - **Permessi: chi usa cosa**: per ogni permesso (fotocamera, microfono, posizione, SMS…) le app che lo hanno, con collegamento alla loro scheda.
           - **Controllo degli APK scaricati**: controlla i file .apk prima dell'installazione (app spia note, firma diversa, permessi sensibili).
           - **Avvisi in background**: ogni 30 minuti circa controlla in silenzio e manda una notifica se compare un'app spia nota, un nuovo servizio di accessibilità, un nuovo amministratore del dispositivo, un nuovo lettore di notifiche o un'app installata da APK con permessi sensibili.
+          - **Impostazioni avvisi**: frequenza del controllo (15 min-6 ore), tipi di avviso, app fidate e storico degli ultimi 50 avvisi; avviso quando un'app ottiene un nuovo permesso sensibile (fotocamera, microfono, SMS, posizione in background…).
+          - **Rapporto errori locale**: se l'app si chiude per un errore, al prossimo avvio puoi condividere il rapporto; nulla viene inviato in automatico.
           - **Widget** per la schermata Home: una tessera piccola (1x1, come un'icona) con OK, !! o XX e una versione estesa con i dettagli.
 
           ## Privacy
@@ -187,7 +193,7 @@ jobs:
                   targetSdk = 34
                   // Il numero di build di GitHub garantisce versionCode sempre crescente.
                   versionCode = 100 + (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0)
-                  versionName = "4.6"
+                  versionName = "5.1"
               }
 
               signingConfigs {
@@ -777,7 +783,159 @@ jobs:
           "… e altri ": "… and others: ",
           "Versione": "Version",
           "[S] Sicurezza\n     dispositivo, app spia, APK": "[S] Security\n     device, spy apps, APKs",
-          "Per mettere una tessera piccola sulla Home: tieni premuto su uno spazio vuoto, scegli Widget e cerca \"GhostALO (icona piccola)\": occupa un solo riquadro e mostra OK, !! o XX. La versione \"esteso\" mostra più dettagli e il tasto [R]. L'icona normale dell'app si trascina dal menu delle app.": "To put a small tile on the Home screen: long-press an empty spot, choose Widgets and look for \"GhostALO (small icon)\": it takes a single square and shows OK, !! or XX. The \"extended\" version shows more details and the [R] button. The normal app icon can be dragged from the app drawer."
+          "Per mettere una tessera piccola sulla Home: tieni premuto su uno spazio vuoto, scegli Widget e cerca \"GhostALO (icona piccola)\": occupa un solo riquadro e mostra OK, !! o XX. La versione \"esteso\" mostra più dettagli e il tasto [R]. L'icona normale dell'app si trascina dal menu delle app.": "To put a small tile on the Home screen: long-press an empty spot, choose Widgets and look for \"GhostALO (small icon)\": it takes a single square and shows OK, !! or XX. The \"extended\" version shows more details and the [R] button. The normal app icon can be dragged from the app drawer.",
+          "[T] Strumenti\n     avvisi, impostazioni, storico, widget": "[T] Tools\n     alerts, settings, history, widget",
+          "Impostazioni avvisi": "Alert settings",
+          "App fidate": "Trusted apps",
+          "Storico avvisi": "Alert history",
+          "IMPOSTAZIONI": "SETTINGS",
+          "OGNI QUANTO CONTROLLARE": "HOW OFTEN TO CHECK",
+          "15 minuti": "15 minutes",
+          "30 minuti": "30 minutes",
+          "1 ora": "1 hour",
+          "6 ore": "6 hours",
+          "Più spesso = avvisi più rapidi, ma un po' più di batteria.": "More often = faster alerts, but a bit more battery.",
+          "DI COSA AVVISARMI": "WHAT TO ALERT ME ABOUT",
+          "Le app spia note ti vengono sempre segnalate.": "Known spy apps are always reported.",
+          "Nuovo permesso sensibile su app già installata": "New sensitive permission on an installed app",
+          "[>] App fidate": "[>] Trusted apps",
+          "[>] Storico avvisi": "[>] Alert history",
+          "APP_FIDATE": "TRUSTED_APPS",
+          "Per le app qui segnate non ricevi più avvisi (le app spia note vengono segnalate comunque). Sono elencate le app che in questo momento potrebbero far scattare un avviso.": "You get no more alerts for the apps ticked here (known spy apps are still reported). Listed are the apps that could trigger an alert right now.",
+          "Controllo…": "Checking…",
+          "Nessuna app da segnare: tutto tranquillo.": "No apps to mark: all quiet.",
+          "accessibilità": "accessibility",
+          "legge notifiche": "reads notifications",
+          "permessi sensibili": "sensitive permissions",
+          "STORICO_AVVISI": "ALERT_HISTORY",
+          "Nessun avviso finora.": "No alerts so far.",
+          "Ultimi %s avvisi, dal più recente.": "Last %s alerts, newest first.",
+          "[>] Cancella lo storico": "[>] Clear history",
+          "L'app si è chiusa in modo imprevisto": "The app closed unexpectedly",
+          "Ho salvato un rapporto dell'errore nel telefono. Non è stato inviato da nessuna parte. Vuoi condividerlo (per esempio via e-mail) per aiutare a correggerlo?": "I saved an error report on this phone. It has not been sent anywhere. Do you want to share it (for example by e-mail) to help fix it?",
+          "Condividi": "Share",
+          "Più tardi": "Later",
+          "fotocamera": "camera",
+          "microfono": "microphone",
+          "contatti": "contacts",
+          "Nuovo permesso sensibile": "New sensitive permission",
+          " ha ottenuto l'accesso a: ": " has gained access to: ",
+          ". Se non te l'aspettavi, controlla i permessi.": ". If you did not expect this, check its permissions.",
+          "Nuovi lettori di notifiche, nuovi permessi e nuove app installate da APK": "New notification readers, new permissions and new apps installed from APK",
+          "A intervalli regolari (di solito 30 minuti, lo cambi in Impostazioni avvisi) l'app controlla in silenzio se è comparso qualcosa di nuovo e ti manda una notifica. Controlla: app spia note, nuovi servizi di accessibilità, nuovi amministratori del dispositivo, nuovi lettori di notifiche e app installate da APK con permessi sensibili. Tutto resta nel telefono.": "At regular intervals (usually 30 minutes, change it in Alert settings) the app silently checks whether anything new has appeared and sends you a notification. It checks: known spy apps, new accessibility services, new device administrators, new notification readers and apps installed from an APK with sensitive permissions. Everything stays on the phone.",
+          "Cookie e tracciamento": "Cookies and tracking",
+          "COOKIE_E_TRACCIAMENTO": "COOKIES_AND_TRACKING",
+          "I cookie stanno dentro ogni browser e Android non permette ad altre app di leggerli o cancellarli. Questa app non può farlo al posto tuo, ma ti porta dove si fa.": "Cookies live inside each browser and Android does not let other apps read or delete them. This app cannot do it for you, but it takes you where it is done.",
+          "I TUOI BROWSER": "YOUR BROWSERS",
+          "[>] %s\n     apri la scheda: Spazio → Cancella dati": "[>] %s\n     open its page: Storage → Clear data",
+          "Nessun browser noto trovato.": "No known browser found.",
+          "Attenzione: \"Cancella dati\" elimina anche cronologia e accessi ai siti (ti sloghi ovunque). \"Svuota cache\" invece non tocca gli accessi.": "Warning: \"Clear data\" also deletes history and site logins (you are logged out everywhere). \"Clear cache\" does not touch logins.",
+          "CONSIGLI": "TIPS",
+          "- Blocca i cookie di terze parti: sono quelli che ti seguono da un sito all'altro. In Chrome: Impostazioni > Privacy e sicurezza > Cookie di terze parti > Blocca.\n- Chrome: usa anche \"Elimina dati di navigazione\" e scegli cookie e dati dei siti.\n- Firefox: Impostazioni > Elimina dati di navigazione all'uscita.\n- Brave e DuckDuckGo bloccano molti tracker già di base.\n- La navigazione in incognito non salva i cookie dopo la chiusura delle schede.": "- Block third-party cookies: they follow you from site to site. In Chrome: Settings > Privacy and security > Third-party cookies > Block.\n- Chrome: also use \"Delete browsing data\" and pick cookies and site data.\n- Firefox: Settings > Delete browsing data on quit.\n- Brave and DuckDuckGo block many trackers by default.\n- Incognito browsing does not keep cookies after the tabs are closed.",
+          "File grandi e vecchi": "Large and old files",
+          "Cartelle di app disinstallate": "Folders of uninstalled apps",
+          "FILE_GRANDI_E_VECCHI": "LARGE_AND_OLD_FILES",
+          "APP_DISINSTALLATE": "UNINSTALLED_APPS",
+          "APPUNTI": "CLIPBOARD",
+          "Svuota il testo copiato (per esempio password o codici). Non cancella la cronologia della tastiera.": "Clears the copied text (for example passwords or codes). It does not delete the keyboard history.",
+          "[>] Cancella gli appunti": "[>] Clear clipboard",
+          "Appunti cancellati.": "Clipboard cleared.",
+          "Impossibile cancellare gli appunti.": "Could not clear the clipboard.",
+          "Download incompleti": "Incomplete downloads",
+          "File lasciati a metà (.crdownload, .part, .partial…) più vecchi di 2 giorni.": "Half-finished files (.crdownload, .part, .partial…) older than 2 days.",
+          "Archivi vecchi in Download": "Old archives in Download",
+          "File .zip, .rar, .7z nella cartella Download non modificati da oltre 90 giorni (spesso già estratti).": ".zip, .rar, .7z files in the Download folder not modified for over 90 days (often already extracted).",
+          "Cerca i file pesanti che non modifichi da tempo (video, archivi, installer…). Vedi l'elenco e confermi tu prima di eliminare.": "Finds heavy files you have not modified for a while (videos, archives, installers…). You see the list and confirm before anything is deleted.",
+          "DIMENSIONE MINIMA": "MINIMUM SIZE",
+          "NON MODIFICATI DA": "NOT MODIFIED FOR",
+          "%s giorni": "%s days",
+          "[x] Annulla": "[x] Cancel",
+          "Scansione in corso…": "Scanning…",
+          "Nessun file trovato con questi criteri.": "No files found with these criteria.",
+          "[<] Cambia criteri": "[<] Change criteria",
+          "Selezionati: %s file, %s": "Selected: %s files, %s",
+          "Spunta i file da eliminare (i più pesanti per primi).": "Tick the files to delete (heaviest first).",
+          "[>] Elimina i selezionati": "[>] Delete selected",
+          "Nessun file selezionato.": "No file selected.",
+          "Eliminare questi file?": "Delete these files?",
+          "%s file, %s. L'operazione non si può annullare.": "%s files, %s. This cannot be undone.",
+          "Liberati %s (%s non eliminati)": "Freed %s (%s not deleted)",
+          "Cerca cartelle con nome da app Android (per esempio com.nome.app) di app che non sono più installate. Sono solo indizi: guarda l'elenco prima di eliminare. Le cartelle interne di Android/data non sono raggiungibili da nessuna app.": "Looks for folders named after Android apps (for example com.name.app) that are no longer installed. These are only hints: check the list before deleting. The Android/data folders are not reachable by any app.",
+          "Nessuna cartella sospetta trovata.": "No suspicious folder found.",
+          "Selezionate: %s cartelle, %s": "Selected: %s folders, %s",
+          "Controlla: se la cartella contiene dati che ti servono (per esempio i backup di un'app), non selezionarla.": "Check: if a folder holds data you need (for example an app's backups), do not select it.",
+          "[>] Elimina le selezionate": "[>] Delete selected",
+          "Nessuna cartella selezionata.": "No folder selected.",
+          "Eliminare queste cartelle?": "Delete these folders?",
+          "%s cartelle, %s, con tutto il loro contenuto. L'operazione non si può annullare.": "%s folders, %s, with all their contents. This cannot be undone.",
+          "Fatto (%s non eliminate)": "Done (%s not deleted)",
+          "Cestino": "Trash",
+          "CESTINO": "TRASH",
+          "Firma di un'app cambiata": "An app's signature changed",
+          "Sposta nel cestino invece di eliminare subito": "Move to trash instead of deleting right away",
+          "Svuota dopo %s giorni": "Empty after %s days",
+          "%s elementi (": "%s items (",
+          ") verranno spostati nel cestino e restano recuperabili per %s giorni.": ") will be moved to the trash and stay recoverable for %s days.",
+          "Spostati nel cestino: ": "Moved to trash: ",
+          "Lo spazio si libera quando il cestino viene svuotato (da Pulizia > Cestino o in automatico).": "Space is freed when the trash is emptied (from Cleaning > Trash, or automatically).",
+          "%s file, %s. ": "%s files, %s. ",
+          "Vanno nel cestino e puoi ripristinarli.": "They go to the trash and you can restore them.",
+          "L'operazione non si può annullare.": "This cannot be undone.",
+          "Spostati nel cestino: %s (%s non spostati)": "Moved to trash: %s (%s not moved)",
+          "%s cartelle, %s, con tutto il loro contenuto. Vanno nel cestino e puoi ripristinarle.": "%s folders, %s, with all their contents. They go to the trash and you can restore them.",
+          "I file eliminati dalle pulizie finiscono qui e restano recuperabili. Dopo il numero di giorni scelto in Impostazioni avvisi vengono cancellati davvero.": "Files deleted by the cleaners end up here and stay recoverable. After the number of days chosen in Alert settings they are really deleted.",
+          "[OK] Cestino attivo": "[OK] Trash on",
+          "[--] Cestino spento: le pulizie eliminano subito": "[--] Trash off: cleaners delete immediately",
+          " - %s giorni": " - %s days",
+          "Il cestino è vuoto.": "The trash is empty.",
+          "Occupa %s.": "Uses %s.",
+          "%s elementi, %s": "%s items, %s",
+          "[>] Ripristina": "[>] Restore",
+          "Ripristinati %s elementi": "%s items restored",
+          "[>] Svuota il cestino adesso": "[>] Empty the trash now",
+          "Svuotare il cestino?": "Empty the trash?",
+          "I file verranno eliminati definitivamente. L'operazione non si può annullare.": "The files will be deleted permanently. This cannot be undone.",
+          "Elenco app spia: aggiorna da file": "Spy app list: update from file",
+          "Esporta elenco delle app": "Export app list",
+          "ELENCO_APP_SPIA": "SPY_APP_LIST",
+          "Elenco in uso: ": "List in use: ",
+          "importato da te": "imported by you",
+          "incluso nell'app": "bundled with the app",
+          "%s app e %s firme note": "%s apps and %s known signatures",
+          "Puoi aggiornare l'elenco senza Internet: scarica dal sito di Echap (github.com/AssoEchap/stalkerware-indicators) il file ioc.yaml, poi sceglilo qui. Il file non viene inviato da nessuna parte.": "You can update the list without Internet: download the ioc.yaml file from the Echap site (github.com/AssoEchap/stalkerware-indicators), then pick it here. The file is not sent anywhere.",
+          "[>] Scegli il file dell'elenco": "[>] Choose the list file",
+          "Nessun gestore di file disponibile.": "No file manager available.",
+          "[>] Torna all'elenco incluso": "[>] Go back to the bundled list",
+          "File non valido: l'elenco precedente resta in uso.": "Invalid file: the previous list stays in use.",
+          "Importati: %s app, %s firme": "Imported: %s apps, %s signatures",
+          "Preparo l'elenco…": "Preparing the list…",
+          "elenco delle app": "app list",
+          "Salvato in Download: ": "Saved in Download: ",
+          "Impossibile salvare l'elenco.": "Could not save the list.",
+          "Firma dell'app cambiata": "App signature changed",
+          " ora ha una firma diversa da prima. Può essere stata sostituita da una copia modificata: se non l'hai reinstallata tu, disinstallala.": " now has a different signature than before. It may have been replaced by a modified copy: if you did not reinstall it yourself, uninstall it.",
+          "[!!] Gli avvisi in background sono in ritardo: Android potrebbe limitarli. Apri Strumenti > Avvisi.": "[!!] Background alerts are late: Android may be limiting them. Open Tools > Alerts.",
+          " (%s non ripristinati)": " (%s not restored)",
+          "firma uguale a quella di uno stalkerware noto": "signature matches a known stalkerware",
+          "nome del pacchetto presente nell'elenco": "package name is in the list",
+          "[XX] MINACCIA NOTA RILEVATA": "[XX] KNOWN THREAT DETECTED",
+          "Corrispondenza con un indicatore dell'elenco pubblico di stalkerware.": "Match with an indicator from the public stalkerware list.",
+          "Segnali che richiedono un controllo tuo: non sono la prova di un'infezione.": "Signals that need a check by you: they are not proof of an infection.",
+          "[??] CONTROLLO INCOMPLETO": "[??] CHECK INCOMPLETE",
+          "[OK] NESSUN INDICATORE RILEVATO": "[OK] NO INDICATOR DETECTED",
+          "CONTROLLI ESEGUITI": "CHECKS PERFORMED",
+          "App installate: elenco spia (": "Installed apps: spy list (",
+          " indicatori), accessibilità, amministratori, lettori di notifiche, APK con permessi sensibili": " indicators), accessibility, administrators, notification readers, APKs with sensitive permissions",
+          " - NON COMPLETATO": " - NOT COMPLETED",
+          "Impostazioni del dispositivo: blocco schermo, aggiornamenti, debug USB, root, DNS e altro": "Device settings: screen lock, updates, USB debugging, root, DNS and more",
+          "Non eseguiti qui: scansione completa dei permessi e tracker (usa il pulsante qui sotto).": "Not run here: full scan of permissions and trackers (use the button below).",
+          "Nessun indizio nei controlli completati, ma il controllo è incompleto: ripeti il controllo.": "No hint in the completed checks, but the check is incomplete: run it again.",
+          "Nessun indizio nei controlli completati, ma il controllo è incompleto: ripetilo.": "No hint in the completed checks, but the check is incomplete: run it again.",
+          "Nessun indizio trovato nei controlli eseguiti.": "No hint found in the checks performed.",
+          "Nessun indicatore non significa nessuno spyware: è un controllo di indizi, non un antivirus, e non garantisce che il telefono sia pulito.": "No indicator does not mean no spyware: this is a check for hints, not an antivirus, and it does not guarantee the phone is clean.",
+          "La frequenza è indicativa: Android può ritardare i controlli per risparmiare batteria, e alcuni telefoni li limitano ancora di più.": "The frequency is indicative: Android may delay the checks to save battery, and some phones limit them even more.",
+          "[!!] L'ultimo controllo è molto più vecchio del previsto: il telefono sta probabilmente limitando l'app. Imposta il risparmio energetico su \"Nessuna restrizione\" (pulsante più sotto).": "[!!] The last check is much older than expected: the phone is probably limiting the app. Set battery use to \"No restrictions\" (button below).",
+          "[!!] Ultimo controllo non riuscito: ": "[!!] Last check failed: "
           }
           EOF_PRJ
           mkdir -p "$(dirname 'app/src/main/assets/stalkerware.txt')"
@@ -2224,6 +2382,7 @@ jobs:
                       .sortedWith(compareBy({ it.key.substringBefore('|') }, { order.indexOf(Kind.valueOf(it.key.substringAfter('|'))) }))
                       .map { it.value }
                       .filter { it.count > 0 }
+                      .map { it.seal() }
                   return ChatReport(found, totals, list, days)
               }
           }
@@ -2252,6 +2411,19 @@ jobs:
               val dirs = ArrayList<File>()
               var bytes = 0L
               val count: Int get() = files.size + dirs.size
+
+              /** Dimensione e data dei file al momento della scansione: si ricontrollano prima di eliminare. */
+              val stamp = HashMap<File, Pair<Long, Long>>()
+
+              fun seal(): JunkCategory {
+                  for (f in files) stamp[f] = Pair(f.length(), f.lastModified())
+                  return this
+              }
+
+              fun unchanged(f: File): Boolean {
+                  val s = stamp[f] ?: return true
+                  return f.exists() && f.length() == s.first && f.lastModified() == s.second
+              }
           }
 
           data class AppSize(val pkg: String, val label: String, val cache: Long, val total: Long)
@@ -2273,6 +2445,8 @@ jobs:
           object Cleaner {
 
               private val tempExt = setOf("tmp", "temp", "log", "dmp", "chk")
+              private val partialExt = setOf("crdownload", "part", "partial", "download", "opdownload")
+              private val archiveExt = setOf("zip", "rar", "7z")
               private const val DAY = 24L * 3600L * 1000L
 
               fun hasAllFiles(): Boolean = Environment.isExternalStorageManager()
@@ -2326,6 +2500,16 @@ jobs:
                       tr("Cartelle .thumbnails e file .thumbdata: Android le ricrea se servono."),
                       true
                   )
+                  val partial = JunkCategory(
+                      tr("Download incompleti"),
+                      tr("File lasciati a metà (.crdownload, .part, .partial…) più vecchi di 2 giorni."),
+                      true
+                  )
+                  val archives = JunkCategory(
+                      tr("Archivi vecchi in Download"),
+                      tr("File .zip, .rar, .7z nella cartella Download non modificati da oltre 90 giorni (spesso già estratti)."),
+                      false
+                  )
                   val empty = JunkCategory(
                       tr("Cartelle vuote"),
                       tr("Cartelle senza alcun file (le cartelle principali come DCIM non vengono toccate)."),
@@ -2342,6 +2526,7 @@ jobs:
                   val stack = ArrayList<Item>()
                   stack.add(Item(root, 0, false, false))
                   var visited = 0
+                  val nowMs = System.currentTimeMillis()
 
                   while (stack.isNotEmpty() && visited < 300000) {
                       Work.check()
@@ -2354,7 +2539,7 @@ jobs:
                       for (e in entries) {
                           visited++
                           if (e.isDirectory) {
-                              if (cur.depth == 0 && e.name == "Android") continue
+                              if (cur.depth == 0 && (e.name == "Android" || e.name == Trash.DIR_NAME)) continue
                               val isThumbs = cur.thumbs || e.name.equals(".thumbnails", ignoreCase = true)
                               stack.add(Item(e, cur.depth + 1, isThumbs, cur.hidden || e.name.startsWith(".")))
                           } else if (e.isFile) {
@@ -2368,6 +2553,14 @@ jobs:
                               } else if (ext == "apk") {
                                   apk.files.add(e)
                                   apk.bytes += len
+                              } else if (ext in partialExt && e.lastModified() < nowMs - 2L * DAY) {
+                                  partial.files.add(e)
+                                  partial.bytes += len
+                              } else if (ext in archiveExt && !cur.hidden && e.lastModified() < nowMs - 90L * DAY &&
+                                  e.absolutePath.contains("/Download", ignoreCase = true)
+                              ) {
+                                  archives.files.add(e)
+                                  archives.bytes += len
                               } else if (ext in tempExt) {
                                   temp.files.add(e)
                                   temp.bytes += len
@@ -2399,16 +2592,33 @@ jobs:
                       }
                   }
 
-                  return listOf(apk, temp, thumbs, empty, dup).filter { it.count > 0 && (it.bytes > 0L || it.dirs.isNotEmpty()) }
+                  return listOf(apk, partial, archives, temp, thumbs, empty, dup)
+                      .filter { it.count > 0 && (it.bytes > 0L || it.dirs.isNotEmpty()) }
+                      .map { it.seal() }
               }
 
               /** Elimina i file delle categorie. Restituisce (byte liberati, file non eliminati). */
               fun delete(ctx: Context, cats: List<JunkCategory>): Pair<Long, Int> {
+                  if (Trash.active(ctx)) {
+                      // Cestino: i file vengono spostati, non cancellati. Le cartelle vuote si eliminano.
+                      val files = ArrayList<File>()
+                      var changed = 0
+                      for (c in cats) for (f in c.files) {
+                          if (c.unchanged(f)) files.add(f) else if (f.exists()) changed++
+                      }
+                      val r = Trash.moveAll(ctx, files)
+                      for (c in cats) for (d in c.dirs.sortedByDescending { it.absolutePath.length }) d.delete()
+                      return Pair(r.first, r.second + changed)
+                  }
                   var freed = 0L
                   var failed = 0
                   val paths = ArrayList<String>()
                   for (c in cats) {
                       for (f in c.files) {
+                          if (!c.unchanged(f)) {
+                              if (f.exists()) failed++
+                              continue
+                          }
                           val len = f.length()
                           if (f.delete()) {
                               freed += len
@@ -2505,6 +2715,84 @@ jobs:
                   return out
               }
 
+              /** File grandi non modificati da tempo (esclude la cartella Android). */
+              fun scanBigOld(minMb: Int, ageDays: Int): List<File> {
+                  val limit = System.currentTimeMillis() - ageDays * DAY
+                  val min = minMb * 1024L * 1024L
+                  val out = ArrayList<File>()
+                  val stack = ArrayList<File>()
+                  stack.add(Environment.getExternalStorageDirectory())
+                  var visited = 0
+                  val root = stack[0]
+                  while (stack.isNotEmpty() && visited < 300000) {
+                      Work.check()
+                      val d = stack.removeAt(stack.size - 1)
+                      val entries = d.listFiles() ?: continue
+                      for (e in entries) {
+                          visited++
+                          if (e.isDirectory) {
+                              if (d == root && (e.name == "Android" || e.name == Trash.DIR_NAME)) continue
+                              stack.add(e)
+                          } else if (e.isFile && e.length() >= min && e.lastModified() < limit) {
+                              out.add(e)
+                          }
+                      }
+                  }
+                  return out.sortedByDescending { it.length() }.take(40)
+              }
+
+              /** Elimina singoli file. Restituisce (byte liberati, non eliminati). */
+              fun deleteFiles(ctx: Context, files: List<File>, stamps: Map<File, Pair<Long, Long>> = emptyMap()): Pair<Long, Int> {
+                  val c = JunkCategory("", "", true)
+                  c.files.addAll(files)
+                  c.stamp.putAll(stamps)
+                  return delete(ctx, listOf(c))
+              }
+
+              private val pkgLike = Regex("^[a-z][a-z0-9_]*(\\.[a-zA-Z0-9_]+)+$")
+
+              private fun installed(ctx: Context, pkg: String): Boolean = try {
+                  ctx.packageManager.getPackageInfo(pkg, 0)
+                  true
+              } catch (e: Exception) {
+                  false
+              }
+
+              fun dirSize(d: File): Long {
+                  var n = 0L
+                  val stack = ArrayList<File>()
+                  stack.add(d)
+                  while (stack.isNotEmpty()) {
+                      Work.check()
+                      val x = stack.removeAt(stack.size - 1)
+                      val l = x.listFiles() ?: continue
+                      for (e in l) if (e.isDirectory) stack.add(e) else n += e.length()
+                  }
+                  return n
+              }
+
+              /** Cartelle con nome da pacchetto Android di app che non risultano più installate. Solo indizi. */
+              fun orphanDirs(ctx: Context): List<Pair<File, Long>> {
+                  val root = Environment.getExternalStorageDirectory()
+                  val parents = listOf(File(root, "Android/media"), root)
+                  val out = ArrayList<Pair<File, Long>>()
+                  for (parent in parents) {
+                      val l = parent.listFiles() ?: continue
+                      for (d in l) {
+                          Work.check()
+                          if (!d.isDirectory || !pkgLike.matches(d.name) || installed(ctx, d.name)) continue
+                          out.add(Pair(d, dirSize(d)))
+                      }
+                  }
+                  return out.sortedByDescending { it.second }
+              }
+
+              /** Elimina una cartella con tutto il contenuto (solo dopo conferma dell'utente). */
+              fun deleteTree(f: File): Boolean {
+                  if (f.isDirectory) f.listFiles()?.forEach { deleteTree(it) }
+                  return f.delete()
+              }
+
               /** App non di sistema che non risultano aperte da oltre 60 giorni. */
               fun unusedApps(ctx: Context, sizes: List<AppSize>): List<UnusedApp> {
                   val usm = ctx.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
@@ -2538,6 +2826,62 @@ jobs:
                       }
                   }
                   return out.sortedByDescending { it.total }.take(12)
+              }
+          }
+          EOF_PRJ
+          mkdir -p "$(dirname 'app/src/main/java/it/privacycheck/Crash.kt')"
+          cat > 'app/src/main/java/it/privacycheck/Crash.kt' <<'EOF_PRJ'
+          package it.privacycheck
+
+          import android.content.Context
+          import android.os.Build
+          import java.io.File
+          import java.io.PrintWriter
+          import java.io.StringWriter
+          import java.util.Date
+
+          /** Rapporto di errore locale: salvato nel telefono, condiviso solo se lo decide l'utente. */
+          object Crash {
+              private fun file(ctx: Context) = File(ctx.filesDir, "crash.txt")
+
+              fun install(ctx: Context) {
+                  val app = ctx.applicationContext
+                  val previous = Thread.getDefaultUncaughtExceptionHandler()
+                  Thread.setDefaultUncaughtExceptionHandler { t, e ->
+                      try {
+                          val sw = StringWriter()
+                          e.printStackTrace(PrintWriter(sw))
+                          val ver = try {
+                              app.packageManager.getPackageInfo(app.packageName, 0).versionName
+                          } catch (x: Exception) {
+                              "?"
+                          }
+                          val txt = "GhostALO $ver\n" + Date() + "\nAndroid " + Build.VERSION.RELEASE +
+                              " (API " + Build.VERSION.SDK_INT + ")\n" + Build.MANUFACTURER + " " + Build.MODEL +
+                              "\nThread: " + t.name + "\n\n" + sw
+                          file(app).writeText(txt.take(20000))
+                      } catch (x: Throwable) {
+                          // niente da fare
+                      }
+                      previous?.uncaughtException(t, e)
+                  }
+              }
+
+              fun pending(ctx: Context): String? {
+                  return try {
+                      val f = file(ctx)
+                      if (f.exists()) f.readText() else null
+                  } catch (e: Exception) {
+                      null
+                  }
+              }
+
+              fun clear(ctx: Context) {
+                  try {
+                      file(ctx).delete()
+                  } catch (e: Exception) {
+                      // ignora
+                  }
               }
           }
           EOF_PRJ
@@ -2814,7 +3158,16 @@ jobs:
                   scroll.addView(box)
                   setContentView(scroll)
                   Watch.ensureScheduled(this)
+                  val app0 = applicationContext
+                  Thread {
+                      try {
+                          Trash.purge(app0, false)
+                      } catch (e: Exception) {
+                          // ignora
+                      }
+                  }.start()
                   showIntro()
+                  offerCrashReport()
               }
 
               override fun onResume() {
@@ -2946,15 +3299,18 @@ jobs:
                   screen = "intro"
                   box.removeAllViews()
                   text("> GhostALO_", size = 26f, color = green, bold = true, pad = 4)
-                  text(tr("Versione") + " 4.6", size = 12f, color = grey, pad = 1)
+                  text(tr("Versione") + " 5.1", size = 12f, color = grey, pad = 1)
                   text(tr("Nessun accesso a Internet: i dati restano nel telefono."), size = 12f, color = grey, pad = 1)
                   sep()
+                  if (Watch.isStale(this)) {
+                      text(tr("[!!] Gli avvisi in background sono in ritardo: Android potrebbe limitarli. Apri Strumenti > Avvisi."), size = 12f, color = orange, pad = 4)
+                  }
                   button(tr("[>] CONTROLLO RAPIDO\n     un tocco: dice se è tutto a posto")) { startQuick() }
                   text(tr("Oppure scegli un'area:"), size = 12f, color = grey, pad = 8)
                   button(tr("[S] Sicurezza\n     dispositivo, app spia, APK")) { showGroup("sec") }
                   button(tr("[P] Privacy\n     permessi, tracker, rete, profili")) { showGroup("priv") }
                   button(tr("[C] Pulizia e prestazioni\n     file inutili, chat, spazio, batteria")) { showGroup("clean") }
-                  button(tr("[T] Strumenti\n     avvisi in background, widget")) { showGroup("tools") }
+                  button(tr("[T] Strumenti\n     avvisi, impostazioni, storico, widget")) { showGroup("tools") }
                   button(tr("[?] Informazioni e limiti")) { showAbout() }
               }
 
@@ -2978,6 +3334,7 @@ jobs:
                           button(tr("Rilevatore di tracker")) { startTrackerScan() }
                           button(tr("Rete Wi-Fi e reti pubbliche")) { showNet() }
                           button(tr("Spazio privato e profili")) { showProfiles() }
+                          button(tr("Cookie e tracciamento")) { showCookies() }
                       }
                       "clean" -> {
                           title(tr("PULIZIA_E_PRESTAZIONI"))
@@ -2985,10 +3342,18 @@ jobs:
                           button(tr("Pulizia WhatsApp e Telegram")) { showChatHome() }
                           button(tr("Analisi dello spazio per tipo")) { showSpaceHome() }
                           button(tr("App attive in background e batteria")) { showBgHome() }
+                          button(tr("File grandi e vecchi")) { showBigHome() }
+                          button(tr("Cestino")) { showTrash() }
+                          button(tr("Cartelle di app disinstallate")) { showOrphanHome() }
                       }
                       else -> {
                           title(tr("STRUMENTI"))
                           button(tr("Avvisi in background e widget")) { showWatch() }
+                          button(tr("Impostazioni avvisi")) { showSettings() }
+                          button(tr("App fidate")) { showTrusted() }
+                          button(tr("Storico avvisi")) { showHistory() }
+                          button(tr("Elenco app spia: aggiorna da file")) { showSpyDb() }
+                          button(tr("Esporta elenco delle app")) { exportApps() }
                       }
                   }
                   button(tr("[<] Menu principale")) { showIntro() }
@@ -3033,7 +3398,10 @@ jobs:
                   val rows = ArrayList<Triple<Int, String, (() -> Unit)?>>()
                   if (snap != null) {
                       fun lab(p: String): String = snap.labels[p] ?: p
-                      for (p in snap.spy) rows.add(Triple(3, tr("APP SPIA NOTA: ") + lab(p), { openApp(p) }))
+                      for (p in snap.spy) {
+                          val why = if (snap.spyBy[p] == "cert") tr("firma uguale a quella di uno stalkerware noto") else tr("nome del pacchetto presente nell'elenco")
+                          rows.add(Triple(3, tr("APP SPIA NOTA: ") + lab(p) + "\n   (" + why + ")", { openApp(p) }))
+                      }
                       for (p in snap.acc) rows.add(Triple(2, tr("Accessibilità attiva: ") + lab(p), { openApp(p) }))
                       for (p in snap.admin) rows.add(Triple(2, tr("Amministratore del dispositivo: ") + lab(p), { openApp(p) }))
                       for (p in snap.listeners) rows.add(Triple(2, tr("Legge le notifiche: ") + lab(p), { openApp(p) }))
@@ -3051,13 +3419,37 @@ jobs:
                   }
                   rows.sortByDescending { it.first }
                   val worst = rows.maxOfOrNull { it.first } ?: 0
-                  if (worst >= 3) {
+                  val incomplete = sec == null || snap == null
+                  val known = snap != null && snap.spy.isNotEmpty()
+                  if (known) {
+                      text(tr("[XX] MINACCIA NOTA RILEVATA"), size = 20f, color = red, bold = true, pad = 8)
+                      text(tr("Corrispondenza con un indicatore dell'elenco pubblico di stalkerware."), size = 12f, color = red, pad = 2)
+                  } else if (worst >= 3) {
                       text(tr("[XX] PROBLEMI DA RISOLVERE (") + rows.size + ")", size = 20f, color = red, bold = true, pad = 8)
                   } else if (worst >= 2) {
                       text(tr("[!!] DA VERIFICARE (") + rows.size + ")", size = 20f, color = orange, bold = true, pad = 8)
+                      text(tr("Segnali che richiedono un controllo tuo: non sono la prova di un'infezione."), size = 12f, color = grey, pad = 2)
+                  } else if (incomplete) {
+                      text(tr("[??] CONTROLLO INCOMPLETO"), size = 20f, color = orange, bold = true, pad = 8)
                   } else {
-                      text(tr("[OK] TUTTO A POSTO"), size = 20f, color = green, bold = true, pad = 8)
+                      text(tr("[OK] NESSUN INDICATORE RILEVATO"), size = 20f, color = green, bold = true, pad = 8)
                   }
+                  section(tr("CONTROLLI ESEGUITI"))
+                  val sp = Stalker.load(this)
+                  text(
+                      (if (snap != null) "[v] " else "[--] ") + tr("App installate: elenco spia (") + (sp.first.size + sp.second.size) + tr(" indicatori), accessibilità, amministratori, lettori di notifiche, APK con permessi sensibili") +
+                          (if (snap == null) tr(" - NON COMPLETATO") else ""),
+                      size = 12f, color = if (snap != null) grey else orange, pad = 2
+                  )
+                  text(
+                      (if (sec != null) "[v] " else "[--] ") + tr("Impostazioni del dispositivo: blocco schermo, aggiornamenti, debug USB, root, DNS e altro") +
+                          (if (sec == null) tr(" - NON COMPLETATO") else ""),
+                      size = 12f, color = if (sec != null) grey else orange, pad = 2
+                  )
+                  text(
+                      "[--] " + tr("Non eseguiti qui: scansione completa dei permessi e tracker (usa il pulsante qui sotto)."),
+                      size = 12f, color = grey, pad = 2
+                  )
                   if (sec != null) {
                       text(tr("Punteggio sicurezza dispositivo: ") + sec.score + "/100", size = 13f, color = grey, pad = 2)
                   }
@@ -3071,10 +3463,13 @@ jobs:
                           if (act != null) t.setOnClickListener { act() }
                       }
                   } else {
-                      text(tr("Nessun indizio trovato dai controlli rapidi."), size = 13f, color = grey, pad = 6)
+                      text(
+                          if (incomplete) tr("Nessun indizio nei controlli completati, ma il controllo è incompleto: ripetilo.") else tr("Nessun indizio trovato nei controlli eseguiti."),
+                          size = 13f, color = grey, pad = 6
+                      )
                   }
                   text(
-                      tr("È un controllo di indizi, non un antivirus: non garantisce che il telefono sia pulito."),
+                      tr("Nessun indicatore non significa nessuno spyware: è un controllo di indizi, non un antivirus, e non garantisce che il telefono sia pulito."),
                       size = 11f, color = grey, pad = 8
                   )
                   button(tr("[>] Scansione completa (app spia e permessi)")) { startScan() }
@@ -3411,7 +3806,7 @@ jobs:
 
                   section(tr("AVVISI IN BACKGROUND"))
                   text(
-                      tr("Ogni 30 minuti circa l'app controlla in silenzio se è comparso qualcosa di nuovo e ti manda una notifica. Controlla: app spia note, nuovi servizi di accessibilità, nuovi amministratori del dispositivo, nuovi lettori di notifiche e app installate da APK con permessi sensibili. Tutto resta nel telefono."),
+                      tr("A intervalli regolari (di solito 30 minuti, lo cambi in Impostazioni avvisi) l'app controlla in silenzio se è comparso qualcosa di nuovo e ti manda una notifica. Controlla: app spia note, nuovi servizi di accessibilità, nuovi amministratori del dispositivo, nuovi lettori di notifiche e app installate da APK con permessi sensibili. Tutto resta nel telefono."),
                       size = 12f, color = grey
                   )
                   val on = Watch.isEnabled(this)
@@ -3447,6 +3842,20 @@ jobs:
                   cb.setOnCheckedChangeListener { _, v -> Watch.setAlertNewApk(this, v) }
                   box.addView(cb)
 
+                  text(
+                      tr("La frequenza è indicativa: Android può ritardare i controlli per risparmiare batteria, e alcuni telefoni li limitano ancora di più."),
+                      size = 12f, color = grey, pad = 4
+                  )
+                  if (Watch.isStale(this)) {
+                      text(
+                          tr("[!!] L'ultimo controllo è molto più vecchio del previsto: il telefono sta probabilmente limitando l'app. Imposta il risparmio energetico su \"Nessuna restrizione\" (pulsante più sotto)."),
+                          size = 13f, color = orange, pad = 6
+                      )
+                  }
+                  val fail = Watch.lastFailure(this)
+                  if (fail != 0L && fail >= Watch.prefs(this).getLong("st_time", 0L)) {
+                      text(tr("[!!] Ultimo controllo non riuscito: ") + DateFormat.format("dd/MM/yyyy HH:mm", Date(fail)), size = 13f, color = orange, pad = 4)
+                  }
                   val t = Watch.prefs(this).getLong("st_time", 0L)
                   if (t == 0L) {
                       text(tr("Nessun controllo eseguito finora."), size = 13f, color = grey, pad = 8)
@@ -3524,6 +3933,595 @@ jobs:
                           // ignora
                       }
                       runOnUiThread { if (screen == "watch") showWatch() }
+                  }
+              }
+
+              // ---------- File grandi e vecchi / cartelle orfane ----------
+
+              private var bigMb = 100
+              private var bigDays = 90
+
+              private fun showBigHome() {
+                  screen = "bigHome"
+                  box.removeAllViews()
+                  title(tr("FILE_GRANDI_E_VECCHI"))
+                  text(
+                      tr("Cerca i file pesanti che non modifichi da tempo (video, archivi, installer…). Vedi l'elenco e confermi tu prima di eliminare."),
+                      size = 13f, color = grey
+                  )
+                  if (!Cleaner.hasAllFiles()) {
+                      text(tr("[NO] Accesso ai file: non concesso"), color = red, bold = true, pad = 10)
+                      button(tr("[>] Concedi accesso a tutti i file")) {
+                          try {
+                              startActivity(Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, Uri.parse("package:$packageName")))
+                          } catch (e: Exception) {
+                              openSettings(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                          }
+                      }
+                      backButton()
+                      return
+                  }
+                  section(tr("DIMENSIONE MINIMA"))
+                  for (m in listOf(50, 100, 500)) button((if (m == bigMb) "[x] " else "[ ] ") + m + " MB") { bigMb = m; showBigHome() }
+                  section(tr("NON MODIFICATI DA"))
+                  for (d in listOf(30, 90, 365)) button((if (d == bigDays) "[x] " else "[ ] ") + trf("%s giorni", d)) { bigDays = d; showBigHome() }
+                  button(tr("[>] Avvia scansione")) { startBigScan() }
+                  backButton()
+              }
+
+              private fun startBigScan() {
+                  token++
+                  val my = token
+                  screen = "bigScan"
+                  box.removeAllViews()
+                  title(tr("FILE_GRANDI_E_VECCHI"))
+                  text(tr("Scansione in corso…"), color = grey)
+                  button(tr("[x] Annulla")) { showBigHome() }
+                  val mb = bigMb
+                  val days = bigDays
+                  work {
+                      val res = try {
+                          Cleaner.scanBigOld(mb, days)
+                      } catch (e: java.util.concurrent.CancellationException) {
+                          throw e
+                      } catch (e: Exception) {
+                          emptyList()
+                      }
+                      runOnUiThread { if (my == token) showBigReport(res) }
+                  }
+              }
+
+              private fun showBigReport(files: List<java.io.File>) {
+                  screen = "bigReport"
+                  box.removeAllViews()
+                  title(tr("FILE_GRANDI_E_VECCHI"))
+                  if (files.isEmpty()) {
+                      text(tr("Nessun file trovato con questi criteri."), color = green)
+                      button(tr("[<] Cambia criteri")) { showBigHome() }
+                      backButton()
+                      return
+                  }
+                  val chosen = HashSet<java.io.File>()
+                  val stamps = files.associateWith { Pair(it.length(), it.lastModified()) }
+                  val total = text("", size = 13f, color = orange, bold = true, pad = 8)
+                  fun upd() {
+                      total.text = trf("Selezionati: %s file, %s", chosen.size, fmt(chosen.sumOf { it.length() }))
+                  }
+                  text(tr("Spunta i file da eliminare (i più pesanti per primi)."), size = 12f, color = grey)
+                  val root = android.os.Environment.getExternalStorageDirectory().absolutePath
+                  for (f in files) {
+                      val age = ((System.currentTimeMillis() - f.lastModified()) / (24L * 3600L * 1000L)).toInt()
+                      check(f.name + "\n" + fmt(f.length()) + " - " + trf("%s giorni", age) + "\n" + (f.parent ?: "").removePrefix(root), false) {
+                          if (it) chosen.add(f) else chosen.remove(f)
+                          upd()
+                      }
+                  }
+                  upd()
+                  button(tr("[>] Elimina i selezionati")) {
+                      if (chosen.isEmpty()) {
+                          Toast.makeText(this, tr("Nessun file selezionato."), Toast.LENGTH_SHORT).show()
+                      } else {
+                          val sel = chosen.toList()
+                          AlertDialog.Builder(this)
+                              .setTitle(tr("Eliminare questi file?"))
+                              .setMessage(
+                                  trf("%s file, %s. ", sel.size, fmt(sel.sumOf { it.length() })) +
+                                      if (Trash.active(this)) tr("Vanno nel cestino e puoi ripristinarli.") else tr("L'operazione non si può annullare.")
+                              )
+                              .setPositiveButton(tr("Elimina")) { _, _ ->
+                                  val app = applicationContext
+                                  work {
+                                      val r = Cleaner.deleteFiles(app, sel, stamps)
+                                      runOnUiThread {
+                                          Toast.makeText(
+                                              this,
+                                              trf(if (Trash.active(this)) "Spostati nel cestino: %s (%s non spostati)" else "Liberati %s (%s non eliminati)", fmt(r.first), r.second),
+                                              Toast.LENGTH_LONG
+                                          ).show()
+                                          showBigHome()
+                                      }
+                                  }
+                              }
+                              .setNegativeButton(tr("Annulla"), null)
+                              .show()
+                      }
+                  }
+                  backButton()
+              }
+
+              private fun showOrphanHome() {
+                  screen = "orphanHome"
+                  box.removeAllViews()
+                  title(tr("APP_DISINSTALLATE"))
+                  text(
+                      tr("Cerca cartelle con nome da app Android (per esempio com.nome.app) di app che non sono più installate. Sono solo indizi: guarda l'elenco prima di eliminare. Le cartelle interne di Android/data non sono raggiungibili da nessuna app."),
+                      size = 13f, color = grey
+                  )
+                  if (!Cleaner.hasAllFiles()) {
+                      text(tr("[NO] Accesso ai file: non concesso"), color = red, bold = true, pad = 10)
+                      button(tr("[>] Concedi accesso a tutti i file")) {
+                          try {
+                              startActivity(Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, Uri.parse("package:$packageName")))
+                          } catch (e: Exception) {
+                              openSettings(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                          }
+                      }
+                      backButton()
+                      return
+                  }
+                  button(tr("[>] Avvia scansione")) { startOrphanScan() }
+                  backButton()
+              }
+
+              private fun startOrphanScan() {
+                  token++
+                  val my = token
+                  screen = "orphanScan"
+                  box.removeAllViews()
+                  title(tr("APP_DISINSTALLATE"))
+                  text(tr("Scansione in corso…"), color = grey)
+                  button(tr("[x] Annulla")) { showOrphanHome() }
+                  work {
+                      val res = try {
+                          Cleaner.orphanDirs(this)
+                      } catch (e: java.util.concurrent.CancellationException) {
+                          throw e
+                      } catch (e: Exception) {
+                          emptyList()
+                      }
+                      runOnUiThread { if (my == token) showOrphanReport(res) }
+                  }
+              }
+
+              private fun showOrphanReport(list: List<Pair<java.io.File, Long>>) {
+                  screen = "orphanReport"
+                  box.removeAllViews()
+                  title(tr("APP_DISINSTALLATE"))
+                  if (list.isEmpty()) {
+                      text(tr("Nessuna cartella sospetta trovata."), color = green)
+                      backButton()
+                      return
+                  }
+                  val chosen = HashSet<java.io.File>()
+                  val sizes = list.toMap()
+                  val total = text("", size = 13f, color = orange, bold = true, pad = 8)
+                  fun upd() {
+                      total.text = trf("Selezionate: %s cartelle, %s", chosen.size, fmt(chosen.sumOf { sizes[it] ?: 0L }))
+                  }
+                  text(tr("Controlla: se la cartella contiene dati che ti servono (per esempio i backup di un'app), non selezionarla."), size = 12f, color = grey)
+                  val root = android.os.Environment.getExternalStorageDirectory().absolutePath
+                  for ((d, sz) in list) {
+                      check(d.name + "\n" + fmt(sz) + "  " + (d.parent ?: "").removePrefix(root), false) {
+                          if (it) chosen.add(d) else chosen.remove(d)
+                          upd()
+                      }
+                  }
+                  upd()
+                  button(tr("[>] Elimina le selezionate")) {
+                      if (chosen.isEmpty()) {
+                          Toast.makeText(this, tr("Nessuna cartella selezionata."), Toast.LENGTH_SHORT).show()
+                      } else {
+                          val sel = chosen.toList()
+                          AlertDialog.Builder(this)
+                              .setTitle(tr("Eliminare queste cartelle?"))
+                              .setMessage(
+                                  if (Trash.active(this)) {
+                                      trf("%s cartelle, %s, con tutto il loro contenuto. Vanno nel cestino e puoi ripristinarle.", sel.size, fmt(sel.sumOf { sizes[it] ?: 0L }))
+                                  } else {
+                                      trf("%s cartelle, %s, con tutto il loro contenuto. L'operazione non si può annullare.", sel.size, fmt(sel.sumOf { sizes[it] ?: 0L }))
+                                  }
+                              )
+                              .setPositiveButton(tr("Elimina")) { _, _ ->
+                                  work {
+                                      var fail = 0
+                                      if (Trash.active(this)) {
+                                          fail = Trash.moveAll(applicationContext, sel).second
+                                      } else {
+                                          for (d in sel) if (!Cleaner.deleteTree(d)) fail++
+                                      }
+                                      runOnUiThread {
+                                          Toast.makeText(this, trf("Fatto (%s non eliminate)", fail), Toast.LENGTH_LONG).show()
+                                          showOrphanHome()
+                                      }
+                                  }
+                              }
+                              .setNegativeButton(tr("Annulla"), null)
+                              .show()
+                      }
+                  }
+                  backButton()
+              }
+
+              // ---------- Cestino ----------
+
+              private fun showTrash() {
+                  screen = "trash"
+                  box.removeAllViews()
+                  title(tr("CESTINO"))
+                  text(
+                      tr("I file eliminati dalle pulizie finiscono qui e restano recuperabili. Dopo il numero di giorni scelto in Impostazioni avvisi vengono cancellati davvero."),
+                      size = 13f, color = grey
+                  )
+                  if (!Cleaner.hasAllFiles()) {
+                      text(tr("[NO] Accesso ai file: non concesso"), color = red, bold = true, pad = 10)
+                      allFilesButton()
+                      backButton()
+                      return
+                  }
+                  text(
+                      (if (Trash.enabled(this)) tr("[OK] Cestino attivo") else tr("[--] Cestino spento: le pulizie eliminano subito")) +
+                          trf(" - %s giorni", Trash.days(this)),
+                      color = if (Trash.enabled(this)) green else orange, bold = true, pad = 8
+                  )
+                  val list = Trash.batches(this)
+                  if (list.isEmpty()) {
+                      text(tr("Il cestino è vuoto."), color = grey, pad = 8)
+                  } else {
+                      text(trf("Occupa %s.", fmt(list.sumOf { it.bytes })), size = 13f, color = orange, pad = 8)
+                      for (b in list) {
+                          text(
+                              DateFormat.format("dd/MM/yyyy HH:mm", Date(b.batch)).toString() + "\n" + trf("%s elementi, %s", b.count, fmt(b.bytes)),
+                              size = 13f, pad = 6
+                          )
+                          button(tr("[>] Ripristina")) {
+                              val app = applicationContext
+                              work {
+                                  val n = Trash.restore(app, b.batch)
+                                  runOnUiThread {
+                                      Toast.makeText(
+                                          this,
+                                          trf("Ripristinati %s elementi", n.first) + if (n.second > 0) trf(" (%s non ripristinati)", n.second) else "",
+                                          Toast.LENGTH_LONG
+                                      ).show()
+                                      showTrash()
+                                  }
+                              }
+                          }
+                      }
+                      button(tr("[>] Svuota il cestino adesso")) {
+                          AlertDialog.Builder(this)
+                              .setTitle(tr("Svuotare il cestino?"))
+                              .setMessage(tr("I file verranno eliminati definitivamente. L'operazione non si può annullare."))
+                              .setPositiveButton(tr("Elimina")) { _, _ ->
+                                  val app = applicationContext
+                                  work {
+                                      val f = Trash.purge(app, true)
+                                      runOnUiThread {
+                                          Toast.makeText(this, tr("Spazio liberato: ") + fmt(f), Toast.LENGTH_LONG).show()
+                                          showTrash()
+                                      }
+                                  }
+                              }
+                              .setNegativeButton(tr("Annulla"), null)
+                              .show()
+                      }
+                  }
+                  backButton()
+              }
+
+              // ---------- Elenco app spia da file / esporta elenco app ----------
+
+              private fun showSpyDb() {
+                  screen = "spyDb"
+                  box.removeAllViews()
+                  title(tr("ELENCO_APP_SPIA"))
+                  val (p, c) = Stalker.load(this)
+                  text(
+                      tr("Elenco in uso: ") + (if (Stalker.isCustom(this)) tr("importato da te") else tr("incluso nell'app")) +
+                          "\n" + trf("%s app e %s firme note", p.size, c.size),
+                      size = 14f, color = green, bold = true, pad = 8
+                  )
+                  text(
+                      tr("Puoi aggiornare l'elenco senza Internet: scarica dal sito di Echap (github.com/AssoEchap/stalkerware-indicators) il file ioc.yaml, poi sceglilo qui. Il file non viene inviato da nessuna parte."),
+                      size = 12f, color = grey
+                  )
+                  button(tr("[>] Scegli il file dell'elenco")) {
+                      val i = Intent(Intent.ACTION_OPEN_DOCUMENT)
+                      i.addCategory(Intent.CATEGORY_OPENABLE)
+                      i.type = "*/*"
+                      try {
+                          startActivityForResult(i, 7)
+                      } catch (e: Exception) {
+                          Toast.makeText(this, tr("Nessun gestore di file disponibile."), Toast.LENGTH_LONG).show()
+                      }
+                  }
+                  if (Stalker.isCustom(this)) {
+                      button(tr("[>] Torna all'elenco incluso")) {
+                          Stalker.resetToBundled(this)
+                          showSpyDb()
+                      }
+                  }
+                  backButton()
+              }
+
+              override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+                  super.onActivityResult(requestCode, resultCode, data)
+                  if (requestCode != 7 || resultCode != RESULT_OK) return
+                  val uri = data?.data ?: return
+                  val app = applicationContext
+                  work {
+                      val res = try {
+                          val txt = contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+                          if (txt == null || txt.length > 8_000_000) null else Stalker.import(app, txt)
+                      } catch (e: Exception) {
+                          null
+                      }
+                      runOnUiThread {
+                          if (res == null) {
+                              Toast.makeText(this, tr("File non valido: l'elenco precedente resta in uso."), Toast.LENGTH_LONG).show()
+                          } else {
+                              Toast.makeText(this, trf("Importati: %s app, %s firme", res.first, res.second), Toast.LENGTH_LONG).show()
+                          }
+                          showSpyDb()
+                      }
+                  }
+              }
+
+              private fun exportApps() {
+                  Toast.makeText(this, tr("Preparo l'elenco…"), Toast.LENGTH_SHORT).show()
+                  val app = applicationContext
+                  work {
+                      val sb = StringBuilder()
+                      try {
+                          val pm = packageManager
+                          val flags = PackageManager.GET_PERMISSIONS or PackageManager.GET_SIGNING_CERTIFICATES
+                          val pkgs = if (Build.VERSION.SDK_INT >= 33) pm.getInstalledPackages(PackageManager.PackageInfoFlags.of(flags.toLong())) else pm.getInstalledPackages(flags)
+                          sb.append("GhostALO - ").append(tr("elenco delle app")).append(" ").append(DateFormat.format("dd/MM/yyyy HH:mm", Date())).append("\n\n")
+                          for (p in pkgs.sortedBy { it.packageName }) {
+                              val ai = p.applicationInfo ?: continue
+                              val sys = (ai.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+                              val inst = try { pm.getInstallSourceInfo(p.packageName).installingPackageName } catch (e: Exception) { null }
+                              sb.append(pm.getApplicationLabel(ai)).append(" | ").append(p.packageName)
+                                  .append(" | v").append(p.versionName ?: "?")
+                                  .append(" | ").append(if (sys) "system" else "user")
+                                  .append(" | ").append(inst ?: "-")
+                                  .append(" | ").append(Stalker.certHashes(p).joinToString("+").take(16))
+                                  .append('\n')
+                          }
+                      } catch (e: Exception) {
+                          // elenco parziale
+                      }
+                      val text = sb.toString()
+                      runOnUiThread {
+                          try {
+                              if (Cleaner.hasAllFiles()) {
+                                  val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                                  dir.mkdirs()
+                                  val f = java.io.File(dir, "GhostALO_app_" + DateFormat.format("yyyyMMdd_HHmm", Date()) + ".txt")
+                                  f.writeText(text)
+                                  Toast.makeText(this, tr("Salvato in Download: ") + f.name, Toast.LENGTH_LONG).show()
+                              } else {
+                                  val i = Intent(Intent.ACTION_SEND)
+                                  i.type = "text/plain"
+                                  i.putExtra(Intent.EXTRA_SUBJECT, "GhostALO - " + tr("elenco delle app"))
+                                  i.putExtra(Intent.EXTRA_TEXT, text)
+                                  startActivity(Intent.createChooser(i, tr("Condividi")))
+                              }
+                          } catch (e: Exception) {
+                              Toast.makeText(this, tr("Impossibile salvare l'elenco."), Toast.LENGTH_LONG).show()
+                          }
+                      }
+                  }
+              }
+
+              // ---------- Cookie e tracciamento ----------
+
+              private val browsers = listOf(
+                  "com.android.chrome", "org.mozilla.firefox", "org.mozilla.firefox_beta", "org.mozilla.focus",
+                  "com.sec.android.app.sbrowser", "com.brave.browser", "com.duckduckgo.mobile.android",
+                  "com.microsoft.emmx", "com.opera.browser", "com.vivaldi.browser", "com.kiwibrowser.browser",
+                  "com.heytap.browser", "com.mi.globalbrowser", "com.android.browser"
+              )
+
+              private fun showCookies() {
+                  screen = "cookies"
+                  box.removeAllViews()
+                  title(tr("COOKIE_E_TRACCIAMENTO"))
+                  text(
+                      tr("I cookie stanno dentro ogni browser e Android non permette ad altre app di leggerli o cancellarli. Questa app non può farlo al posto tuo, ma ti porta dove si fa."),
+                      size = 13f, color = grey
+                  )
+                  section(tr("I TUOI BROWSER"))
+                  var n = 0
+                  for (pk in browsers) {
+                      val label = try {
+                          packageManager.getApplicationLabel(packageManager.getApplicationInfo(pk, 0)).toString()
+                      } catch (e: Exception) {
+                          null
+                      } ?: continue
+                      n++
+                      button(trf("[>] %s\n     apri la scheda: Spazio → Cancella dati", label)) { openApp(pk) }
+                  }
+                  if (n == 0) text(tr("Nessun browser noto trovato."), size = 13f, color = grey)
+                  text(
+                      tr("Attenzione: \"Cancella dati\" elimina anche cronologia e accessi ai siti (ti sloghi ovunque). \"Svuota cache\" invece non tocca gli accessi."),
+                      size = 12f, color = orange, pad = 8
+                  )
+                  section(tr("CONSIGLI"))
+                  text(
+                      tr("- Blocca i cookie di terze parti: sono quelli che ti seguono da un sito all'altro. In Chrome: Impostazioni > Privacy e sicurezza > Cookie di terze parti > Blocca.\n- Chrome: usa anche \"Elimina dati di navigazione\" e scegli cookie e dati dei siti.\n- Firefox: Impostazioni > Elimina dati di navigazione all'uscita.\n- Brave e DuckDuckGo bloccano molti tracker già di base.\n- La navigazione in incognito non salva i cookie dopo la chiusura delle schede."),
+                      size = 13f, color = dark
+                  )
+                  backButton()
+              }
+
+              // ---------- Impostazioni, app fidate, storico, report errori ----------
+
+              private fun check(label: String, value: Boolean, onChange: (Boolean) -> Unit) {
+                  val cb = CheckBox(this)
+                  cb.text = label
+                  cb.setTextColor(green)
+                  cb.setTypeface(Typeface.MONOSPACE, Typeface.BOLD)
+                  cb.textSize = 13f
+                  cb.buttonTintList = ColorStateList.valueOf(green)
+                  cb.isChecked = value
+                  cb.setOnCheckedChangeListener { _, v -> onChange(v) }
+                  box.addView(cb)
+              }
+
+              private fun showSettings() {
+                  screen = "settings"
+                  box.removeAllViews()
+                  title(tr("IMPOSTAZIONI"))
+                  section(tr("OGNI QUANTO CONTROLLARE"))
+                  val cur = Watch.periodMin(this)
+                  val opts = listOf(
+                      Pair(15, tr("15 minuti")),
+                      Pair(30, tr("30 minuti")),
+                      Pair(60, tr("1 ora")),
+                      Pair(360, tr("6 ore"))
+                  )
+                  for ((m, name) in opts) {
+                      button((if (m == cur) "[x] " else "[ ] ") + name) {
+                          Watch.setPeriodMin(this, m)
+                          showSettings()
+                      }
+                  }
+                  text(tr("Più spesso = avvisi più rapidi, ma un po' più di batteria."), size = 12f, color = grey)
+                  section(tr("DI COSA AVVISARMI"))
+                  text(tr("Le app spia note ti vengono sempre segnalate."), size = 12f, color = grey)
+                  check(tr("Nuovo servizio di accessibilità"), Watch.toggle(this, "alert_acc")) { Watch.setToggle(this, "alert_acc", it) }
+                  check(tr("Nuovo amministratore del dispositivo"), Watch.toggle(this, "alert_adm")) { Watch.setToggle(this, "alert_adm", it) }
+                  check(tr("Nuovo lettore di notifiche"), Watch.toggle(this, "alert_lst")) { Watch.setToggle(this, "alert_lst", it) }
+                  check(tr("App da APK con permessi sensibili"), Watch.toggle(this, "alert_risk")) { Watch.setToggle(this, "alert_risk", it) }
+                  check(tr("Nuovo permesso sensibile su app già installata"), Watch.toggle(this, "alert_perm")) { Watch.setToggle(this, "alert_perm", it) }
+                  check(tr("Avvisa anche per ogni nuova app installata da APK"), Watch.alertNewApk(this)) { Watch.setAlertNewApk(this, it) }
+                  check(tr("Firma di un'app cambiata"), Watch.toggle(this, "alert_sig")) { Watch.setToggle(this, "alert_sig", it) }
+                  section(tr("CESTINO"))
+                  check(tr("Sposta nel cestino invece di eliminare subito"), Trash.enabled(this)) { Trash.setEnabled(this, it) }
+                  val td = Trash.days(this)
+                  for (d in listOf(7, 30)) {
+                      button((if (d == td) "[x] " else "[ ] ") + trf("Svuota dopo %s giorni", d)) {
+                          Trash.setDays(this, d)
+                          showSettings()
+                      }
+                  }
+                  button(tr("[>] App fidate")) { showTrusted() }
+                  button(tr("[>] Storico avvisi")) { showHistory() }
+                  backButton()
+              }
+
+              private fun showTrusted() {
+                  token++
+                  val my = token
+                  screen = "trusted"
+                  box.removeAllViews()
+                  title(tr("APP_FIDATE"))
+                  text(
+                      tr("Per le app qui segnate non ricevi più avvisi (le app spia note vengono segnalate comunque). Sono elencate le app che in questo momento potrebbero far scattare un avviso."),
+                      size = 12f, color = grey
+                  )
+                  text(tr("Controllo…"), color = grey)
+                  work {
+                      val snap = try {
+                          Watch.snapshot(this)
+                      } catch (e: Exception) {
+                          null
+                      }
+                      runOnUiThread { if (my == token) fillTrusted(snap) }
+                  }
+              }
+
+              private fun fillTrusted(snap: Snap?) {
+                  box.removeAllViews()
+                  title(tr("APP_FIDATE"))
+                  if (snap == null) {
+                      text(tr("Non sono riuscito a completare il controllo."), color = red)
+                      backButton()
+                      return
+                  }
+                  val trusted = Watch.trusted(this)
+                  val all = HashSet<String>()
+                  all.addAll(snap.acc); all.addAll(snap.admin); all.addAll(snap.listeners)
+                  all.addAll(snap.risk); all.addAll(snap.side)
+                  all.addAll(trusted.filter { it in snap.installed })
+                  all.removeAll(snap.spy)
+                  if (all.isEmpty()) {
+                      text(tr("Nessuna app da segnare: tutto tranquillo."), color = green)
+                  }
+                  for (p in all.sortedBy { (snap.labels[it] ?: it).lowercase() }) {
+                      val tags = ArrayList<String>()
+                      if (p in snap.acc) tags.add(tr("accessibilità"))
+                      if (p in snap.admin) tags.add("admin")
+                      if (p in snap.listeners) tags.add(tr("legge notifiche"))
+                      if (p in snap.risk) tags.add(tr("permessi sensibili"))
+                      if (p in snap.side && tags.isEmpty()) tags.add("APK")
+                      check((snap.labels[p] ?: p) + (if (tags.isEmpty()) "" else "\n" + tags.joinToString(", ")), p in trusted) {
+                          Watch.setTrusted(this, p, it)
+                      }
+                  }
+                  backButton()
+              }
+
+              private fun showHistory() {
+                  screen = "history"
+                  box.removeAllViews()
+                  title(tr("STORICO_AVVISI"))
+                  val list = Watch.history(this)
+                  if (list.isEmpty()) {
+                      text(tr("Nessun avviso finora."), color = grey)
+                  } else {
+                      text(trf("Ultimi %s avvisi, dal più recente.", list.size), size = 12f, color = grey)
+                      for (h in list) {
+                          text(
+                              (if (h.high) "[!!] " else "[i] ") + DateFormat.format("dd/MM/yyyy HH:mm", Date(h.time)) +
+                                  "\n" + h.title + "\n" + h.text,
+                              size = 13f, color = if (h.high) orange else dark, pad = 7
+                          )
+                          val pk = h.pkg
+                          if (pk != null) button(tr("[>] Apri la scheda dell'app")) { openApp(pk) }
+                      }
+                      button(tr("[>] Cancella lo storico")) {
+                          Watch.clearHistory(this)
+                          showHistory()
+                      }
+                  }
+                  backButton()
+              }
+
+              private fun offerCrashReport() {
+                  val rep = Crash.pending(this) ?: return
+                  try {
+                      AlertDialog.Builder(this)
+                          .setTitle(tr("L'app si è chiusa in modo imprevisto"))
+                          .setMessage(tr("Ho salvato un rapporto dell'errore nel telefono. Non è stato inviato da nessuna parte. Vuoi condividerlo (per esempio via e-mail) per aiutare a correggerlo?"))
+                          .setPositiveButton(tr("Condividi")) { _, _ ->
+                              val i = Intent(Intent.ACTION_SEND)
+                              i.type = "text/plain"
+                              i.putExtra(Intent.EXTRA_SUBJECT, "GhostALO - crash report")
+                              i.putExtra(Intent.EXTRA_TEXT, rep)
+                              try {
+                                  startActivity(Intent.createChooser(i, tr("Condividi")))
+                              } catch (e: Exception) {
+                                  // niente da fare
+                              }
+                              Crash.clear(this)
+                          }
+                          .setNegativeButton(tr("Elimina")) { _, _ -> Crash.clear(this) }
+                          .setNeutralButton(tr("Più tardi"), null)
+                          .show()
+                  } catch (e: Exception) {
+                      // ignora
                   }
               }
 
@@ -3609,6 +4607,19 @@ jobs:
                       size = 12f, color = grey
                   )
                   button(tr("[>] Libera cache di sistema")) { startFreeCache() }
+                  section(tr("APPUNTI"))
+                  text(
+                      tr("Svuota il testo copiato (per esempio password o codici). Non cancella la cronologia della tastiera."),
+                      size = 12f, color = grey
+                  )
+                  button(tr("[>] Cancella gli appunti")) {
+                      try {
+                          (getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).clearPrimaryClip()
+                          Toast.makeText(this, tr("Appunti cancellati."), Toast.LENGTH_SHORT).show()
+                      } catch (e: Exception) {
+                          Toast.makeText(this, tr("Impossibile cancellare gli appunti."), Toast.LENGTH_SHORT).show()
+                      }
+                  }
                   backButton()
               }
 
@@ -3802,8 +4813,12 @@ jobs:
                   AlertDialog.Builder(this)
                       .setTitle(tr("Conferma eliminazione"))
                       .setMessage(
-                          trf("Verranno eliminati definitivamente %s elementi (", n) + fmt(b) +
-                              tr("). L'operazione non si può annullare.")
+                          if (Trash.active(this)) {
+                              trf("%s elementi (", n) + fmt(b) + trf(") verranno spostati nel cestino e restano recuperabili per %s giorni.", Trash.days(this))
+                          } else {
+                              trf("Verranno eliminati definitivamente %s elementi (", n) + fmt(b) +
+                                  tr("). L'operazione non si può annullare.")
+                          }
                       )
                       .setPositiveButton(tr("Elimina")) { _, _ -> doDelete(sel, again) }
                       .setNegativeButton(tr("Annulla"), null)
@@ -3823,7 +4838,12 @@ jobs:
                           if (my == token) {
                               box.removeAllViews()
                               title(tr("PULIZIA_COMPLETATA"))
-                              text(tr("Spazio liberato: ") + fmt(res.first), size = 20f, color = green, bold = true, pad = 8)
+                              if (Trash.active(this)) {
+                                  text(tr("Spostati nel cestino: ") + fmt(res.first), size = 20f, color = green, bold = true, pad = 8)
+                                  text(tr("Lo spazio si libera quando il cestino viene svuotato (da Pulizia > Cestino o in automatico)."), size = 12f, color = grey)
+                              } else {
+                                  text(tr("Spazio liberato: ") + fmt(res.first), size = 20f, color = green, bold = true, pad = 8)
+                              }
                               if (res.second > 0) {
                                   text(res.second.toString() + tr(" file non è stato possibile eliminarli."), color = orange)
                               }
@@ -5290,7 +6310,9 @@ jobs:
                   val p = HashSet<String>()
                   val c = HashSet<String>()
                   try {
-                      ctx.assets.open("stalkerware.txt").bufferedReader().useLines { lines ->
+                      val custom = customFile(ctx)
+                      val input = if (custom.exists()) custom.inputStream() else ctx.assets.open("stalkerware.txt")
+                      input.bufferedReader().useLines { lines ->
                           for (l in lines) {
                               if (l.startsWith("P:")) {
                                   p.add(l.substring(2).trim())
@@ -5305,6 +6327,55 @@ jobs:
                   pk = p
                   ce = c
                   return Pair(p, c)
+              }
+
+              private fun customFile(ctx: Context) = java.io.File(ctx.filesDir, "stalkerware_custom.txt")
+
+              fun isCustom(ctx: Context): Boolean = customFile(ctx).exists()
+
+              /** Legge un elenco dal testo di un file: formato ioc.yaml di Echap o formato P:/C: . */
+              private fun parse(text: String): Pair<Set<String>, Set<String>> {
+                  val p = HashSet<String>()
+                  val c = HashSet<String>()
+                  var section = ""
+                  val pkgRe = Regex("[A-Za-z0-9_.]+")
+                  val certRe = Regex("[0-9a-fA-F]{40}")
+                  for (raw in text.lineSequence()) {
+                      val t = raw.trim()
+                      if (t.startsWith("P:")) { val v = t.substring(2).trim(); if (pkgRe.matches(v)) p.add(v); continue }
+                      if (t.startsWith("C:")) { val v = t.substring(2).trim(); if (certRe.matches(v)) c.add(v.uppercase()); continue }
+                      if (t.startsWith("- name:")) { section = ""; continue }
+                      if (t == "packages:") { section = "p"; continue }
+                      if (t == "certificates:") { section = "c"; continue }
+                      if (t.endsWith(":") && !t.startsWith("-")) { section = "x"; continue }
+                      if (t.startsWith("- ")) {
+                          val v = t.substring(2).trim().trim('"', '\'')
+                          if (section == "p" && pkgRe.matches(v)) p.add(v)
+                          if (section == "c" && certRe.matches(v)) c.add(v.uppercase())
+                      }
+                  }
+                  return Pair(p, c)
+              }
+
+              /** Importa un elenco da file. Restituisce (app, firme) importate, o null se il file non è valido. */
+              @Synchronized
+              fun import(ctx: Context, text: String): Pair<Int, Int>? {
+                  val (p, c) = parse(text)
+                  if (p.size + c.size < 50) return null
+                  val sb = StringBuilder("# Elenco importato dall'utente\n")
+                  for (x in p.sorted()) sb.append("P:").append(x).append('\n')
+                  for (x in c.sorted()) sb.append("C:").append(x).append('\n')
+                  customFile(ctx).writeText(sb.toString())
+                  pk = null
+                  ce = null
+                  return Pair(p.size, c.size)
+              }
+
+              @Synchronized
+              fun resetToBundled(ctx: Context) {
+                  customFile(ctx).delete()
+                  pk = null
+                  ce = null
               }
 
               fun certHashes(p: PackageInfo): List<String> {
@@ -5635,6 +6706,7 @@ jobs:
               override fun onCreate() {
                   super.onCreate()
                   T.init(this)
+                  Crash.install(this)
               }
           }
           EOF_PRJ
@@ -5800,6 +6872,203 @@ jobs:
               }
           }
           EOF_PRJ
+          mkdir -p "$(dirname 'app/src/main/java/it/privacycheck/Trash.kt')"
+          cat > 'app/src/main/java/it/privacycheck/Trash.kt' <<'EOF_PRJ'
+          package it.privacycheck
+
+          import android.content.Context
+          import android.media.MediaScannerConnection
+          import android.os.Environment
+          import java.io.File
+
+          class TrashBatch(val batch: Long, val count: Int, val bytes: Long)
+
+          /**
+           * Cestino: i file eliminati vengono spostati in una cartella nascosta dell'archivio
+           * (stesso volume, quindi lo spostamento è istantaneo) e cancellati davvero solo dopo
+           * il numero di giorni scelto. Un indice di testo ricorda da dove arrivano.
+           */
+          object Trash {
+              private const val DAY = 24L * 3600L * 1000L
+              const val DIR_NAME = ".GhostALO_trash"
+
+              private fun prefs(ctx: Context) = ctx.getSharedPreferences("trash", Context.MODE_PRIVATE)
+              private fun index(ctx: Context) = File(ctx.filesDir, "trash.idx")
+              fun dir(): File = File(Environment.getExternalStorageDirectory(), DIR_NAME)
+
+              fun enabled(ctx: Context): Boolean = prefs(ctx).getBoolean("enabled", true)
+              fun setEnabled(ctx: Context, v: Boolean) { prefs(ctx).edit().putBoolean("enabled", v).apply() }
+              fun days(ctx: Context): Int = prefs(ctx).getInt("days", 7)
+              fun setDays(ctx: Context, d: Int) { prefs(ctx).edit().putInt("days", d).apply() }
+
+              /** Il cestino si usa solo se attivo e se l'app può scrivere nell'archivio. */
+              fun active(ctx: Context): Boolean = enabled(ctx) && Cleaner.hasAllFiles()
+
+              private class Line(val id: String, val batch: Long, val size: Long, val path: String)
+
+              private fun read(ctx: Context): MutableList<Line> {
+                  val out = ArrayList<Line>()
+                  try {
+                      val f = index(ctx)
+                      if (!f.exists()) return out
+                      f.forEachLine { l ->
+                          val p = l.split('\t', limit = 4)
+                          if (p.size == 4) {
+                              val b = p[1].toLongOrNull()
+                              val s = p[2].toLongOrNull()
+                              if (b != null && s != null) out.add(Line(p[0], b, s, p[3]))
+                          }
+                      }
+                  } catch (e: Exception) {
+                      // ignora
+                  }
+                  return out
+              }
+
+              private fun write(ctx: Context, lines: List<Line>) {
+                  try {
+                      index(ctx).writeText(lines.joinToString("") { it.id + "\t" + it.batch + "\t" + it.size + "\t" + it.path + "\n" })
+                  } catch (e: Exception) {
+                      // ignora
+                  }
+              }
+
+              private fun moveOne(src: File, dst: File): Boolean {
+                  if (src.renameTo(dst)) return true
+                  if (src.isFile) {
+                      val free = try {
+                          android.os.StatFs((dst.parentFile ?: dst).absolutePath).availableBytes
+                      } catch (e: Exception) {
+                          0L
+                      }
+                      if (free < src.length() + 50L * 1024L * 1024L) return false
+                      return try {
+                          src.copyTo(dst, overwrite = true)
+                          if (src.delete()) true else { dst.delete(); false }
+                      } catch (e: Exception) {
+                          dst.delete()
+                          false
+                      }
+                  }
+                  return false
+              }
+
+              /** Sposta nel cestino. Restituisce (byte spostati, elementi non spostati). */
+              @Synchronized
+              fun moveAll(ctx: Context, items: List<File>): Pair<Long, Int> {
+                  val d = dir()
+                  d.mkdirs()
+                  try {
+                      File(d, ".nomedia").createNewFile()
+                  } catch (e: Exception) {
+                      // ignora
+                  }
+                  val batch = System.currentTimeMillis()
+                  var bytes = 0L
+                  var failed = 0
+                  var n = 0
+                  val sb = StringBuilder()
+                  val scanned = ArrayList<String>()
+                  try {
+                      for (f in items) {
+                          Work.check()
+                          if (!f.exists()) continue
+                          val size = if (f.isDirectory) Cleaner.dirSize(f) else f.length()
+                          val id = java.lang.Long.toHexString(batch) + "_" + n
+                          n++
+                          if (moveOne(f, File(d, id))) {
+                              bytes += size
+                              sb.append(id).append('\t').append(batch).append('\t').append(size).append('\t').append(f.absolutePath).append('\n')
+                              scanned.add(f.absolutePath)
+                          } else {
+                              failed++
+                          }
+                      }
+                  } finally {
+                      // L'indice si scrive sempre, anche se l'operazione viene annullata a metà:
+                      // ciò che è già stato spostato resta recuperabile.
+                      try {
+                          index(ctx).appendText(sb.toString())
+                      } catch (e: Exception) {
+                          // ignora
+                      }
+                      scan(ctx, scanned)
+                  }
+                  return Pair(bytes, failed)
+              }
+
+              private fun scan(ctx: Context, paths: List<String>) {
+                  if (paths.isEmpty()) return
+                  try {
+                      MediaScannerConnection.scanFile(ctx, paths.toTypedArray(), null, null)
+                  } catch (e: Exception) {
+                      // ignora
+                  }
+              }
+
+              @Synchronized
+              fun batches(ctx: Context): List<TrashBatch> {
+                  val d = dir()
+                  val lines = read(ctx).filter { File(d, it.id).exists() }
+                  return lines.groupBy { it.batch }
+                      .map { (b, l) -> TrashBatch(b, l.size, l.sumOf { it.size }) }
+                      .sortedByDescending { it.batch }
+              }
+
+              @Synchronized
+              fun totalBytes(ctx: Context): Long = batches(ctx).sumOf { it.bytes }
+
+              /** Rimette i file dove erano. Restituisce quanti sono stati ripristinati. */
+              @Synchronized
+              fun restore(ctx: Context, batch: Long): Pair<Int, Int> {
+                  val d = dir()
+                  val all = read(ctx)
+                  val keep = ArrayList<Line>()
+                  var ok = 0
+                  var failed = 0
+                  val scanned = ArrayList<String>()
+                  for (l in all) {
+                      if (l.batch != batch) { keep.add(l); continue }
+                      val src = File(d, l.id)
+                      if (!src.exists()) continue
+                      var target = File(l.path)
+                      if (target.exists()) target = File(target.parentFile, target.name + ".ripristinato")
+                      target.parentFile?.mkdirs()
+                      if (moveOne(src, target)) {
+                          ok++
+                          scanned.add(target.absolutePath)
+                      } else {
+                          failed++
+                          keep.add(l)
+                      }
+                  }
+                  write(ctx, keep)
+                  scan(ctx, scanned)
+                  return Pair(ok, failed)
+              }
+
+              /** Elimina davvero i file scaduti (o tutti). Restituisce i byte liberati. */
+              @Synchronized
+              fun purge(ctx: Context, all: Boolean): Long {
+                  if (!Cleaner.hasAllFiles()) return 0L
+                  val d = dir()
+                  val limit = System.currentTimeMillis() - days(ctx) * DAY
+                  val keep = ArrayList<Line>()
+                  var freed = 0L
+                  for (l in read(ctx)) {
+                      val f = File(d, l.id)
+                      if (!f.exists()) continue
+                      if (all || l.batch < limit) {
+                          if (Cleaner.deleteTree(f)) freed += l.size else keep.add(l)
+                      } else {
+                          keep.add(l)
+                      }
+                  }
+                  write(ctx, keep)
+                  return freed
+              }
+          }
+          EOF_PRJ
           mkdir -p "$(dirname 'app/src/main/java/it/privacycheck/Watch.kt')"
           cat > 'app/src/main/java/it/privacycheck/Watch.kt' <<'EOF_PRJ'
           package it.privacycheck
@@ -5826,6 +7095,8 @@ jobs:
           import android.os.Build
           import android.provider.Settings
           import android.view.accessibility.AccessibilityManager
+          import org.json.JSONArray
+          import org.json.JSONObject
 
           class Alert(
               val id: Int,
@@ -5843,8 +7114,13 @@ jobs:
               val admin: Set<String>,
               val listeners: Set<String>,
               val spy: Set<String>,
-              val labels: Map<String, String>
+              val labels: Map<String, String>,
+              val perms: Set<String> = emptySet(),
+              val certs: Set<String> = emptySet(),
+              val spyBy: Map<String, String> = emptyMap()
           )
+
+          class HistItem(val time: Long, val high: Boolean, val title: String, val text: String, val pkg: String?)
 
           /**
            * Controllo periodico in background. Confronta lo stato attuale con quello salvato
@@ -5854,7 +7130,7 @@ jobs:
           object Watch {
 
               const val JOB_ID = 4711
-              private const val PERIOD_MS = 30L * 60L * 1000L
+              private const val MAX_HISTORY = 50
               private const val CH_HIGH = "alert_high"
               private const val CH_INFO = "alert_info"
               private const val MAX_NOTIFICATIONS = 5
@@ -5885,6 +7161,113 @@ jobs:
                   prefs(ctx).edit().putBoolean("alert_new_apk", v).apply()
               }
 
+              fun periodMin(ctx: Context): Int = prefs(ctx).getInt("period_min", 30)
+
+              fun setPeriodMin(ctx: Context, m: Int) {
+                  prefs(ctx).edit().putInt("period_min", m).apply()
+                  try {
+                      if (isEnabled(ctx)) schedule(ctx)
+                  } catch (e: Exception) {
+                      // ignora
+                  }
+              }
+
+              /** Vero se gli avvisi sono attivi ma l'ultimo controllo è molto più vecchio del previsto. */
+              fun isStale(ctx: Context): Boolean {
+                  if (!isEnabled(ctx)) return false
+                  val t = prefs(ctx).getLong("st_time", 0L)
+                  if (t == 0L) return false
+                  val limitMin = maxOf(3 * periodMin(ctx), 180)
+                  return System.currentTimeMillis() - t > limitMin * 60L * 1000L
+              }
+
+              fun lastFailure(ctx: Context): Long = prefs(ctx).getLong("st_fail", 0L)
+
+              fun markFailure(ctx: Context) {
+                  prefs(ctx).edit().putLong("st_fail", System.currentTimeMillis()).apply()
+              }
+
+              fun toggle(ctx: Context, key: String): Boolean = prefs(ctx).getBoolean(key, true)
+
+              fun setToggle(ctx: Context, key: String, v: Boolean) {
+                  prefs(ctx).edit().putBoolean(key, v).apply()
+              }
+
+              fun trusted(ctx: Context): Set<String> = getSet(prefs(ctx), "trusted")
+
+              fun setTrusted(ctx: Context, pkg: String, v: Boolean) {
+                  val s = HashSet(trusted(ctx))
+                  if (v) s.add(pkg) else s.remove(pkg)
+                  prefs(ctx).edit().putStringSet("trusted", s).apply()
+              }
+
+              val sensitivePerms = listOf(
+                  Manifest.permission.CAMERA,
+                  Manifest.permission.RECORD_AUDIO,
+                  Manifest.permission.READ_SMS,
+                  Manifest.permission.SEND_SMS,
+                  Manifest.permission.RECEIVE_SMS,
+                  Manifest.permission.READ_CALL_LOG,
+                  Manifest.permission.READ_CONTACTS,
+                  Manifest.permission.ACCESS_BACKGROUND_LOCATION
+              )
+
+              private fun permName(perm: String): String = when (perm) {
+                  Manifest.permission.CAMERA -> tr("fotocamera")
+                  Manifest.permission.RECORD_AUDIO -> tr("microfono")
+                  Manifest.permission.READ_SMS, Manifest.permission.SEND_SMS, Manifest.permission.RECEIVE_SMS -> "SMS"
+                  Manifest.permission.READ_CALL_LOG -> tr("registro chiamate")
+                  Manifest.permission.READ_CONTACTS -> tr("contatti")
+                  else -> tr("posizione in background")
+              }
+
+              // ---------- Storico avvisi ----------
+
+              @Synchronized
+              private fun logAlert(ctx: Context, a: Alert) {
+                  try {
+                      val pr = prefs(ctx)
+                      val old = JSONArray(pr.getString("history", "[]"))
+                      val o = JSONObject()
+                      o.put("t", System.currentTimeMillis())
+                      o.put("h", a.high)
+                      o.put("ti", a.title)
+                      o.put("tx", a.text)
+                      o.put("p", a.pkg ?: "")
+                      val out = JSONArray()
+                      out.put(o)
+                      var i = 0
+                      while (i < old.length() && out.length() < MAX_HISTORY) {
+                          out.put(old.get(i))
+                          i++
+                      }
+                      pr.edit().putString("history", out.toString()).apply()
+                  } catch (e: Exception) {
+                      // ignora
+                  }
+              }
+
+              @Synchronized
+              fun history(ctx: Context): List<HistItem> {
+                  val out = ArrayList<HistItem>()
+                  try {
+                      val arr = JSONArray(prefs(ctx).getString("history", "[]"))
+                      for (i in 0 until arr.length()) {
+                          val o = arr.getJSONObject(i)
+                          val p = o.optString("p", "")
+                          out.add(HistItem(o.getLong("t"), o.optBoolean("h"), o.optString("ti"), o.optString("tx"), if (p.isEmpty()) null else p))
+                      }
+                  } catch (e: Exception) {
+                      // ignora
+                  }
+                  return out
+              }
+
+              @Synchronized
+              fun clearHistory(ctx: Context) {
+                  prefs(ctx).edit().remove("history").apply()
+              }
+
               private fun getSet(pr: SharedPreferences, key: String): Set<String> =
                   pr.getStringSet(key, null)?.toSet() ?: emptySet()
 
@@ -5897,7 +7280,7 @@ jobs:
 
               private fun schedule(ctx: Context) {
                   val info = JobInfo.Builder(JOB_ID, ComponentName(ctx, WatchJobService::class.java))
-                      .setPeriodic(PERIOD_MS)
+                      .setPeriodic(periodMin(ctx) * 60L * 1000L)
                       .setPersisted(true)
                       .build()
                   scheduler(ctx).schedule(info)
@@ -5952,6 +7335,11 @@ jobs:
                   return out
               }
 
+              private fun certOf(p: PackageInfo): String? {
+                  val l = Stalker.certHashes(p)
+                  return if (l.isEmpty()) null else l.sorted().joinToString("+")
+              }
+
               fun snapshot(ctx: Context): Snap {
                   val pm = ctx.packageManager
                   val (spyP, spyC) = Stalker.load(ctx)
@@ -5967,21 +7355,28 @@ jobs:
                   val risk = HashSet<String>()
                   val spy = HashSet<String>()
                   val labels = HashMap<String, String>()
+                  val perms = HashSet<String>()
+                  val certs = HashSet<String>()
+                  val spyBy = HashMap<String, String>()
 
                   for (p in pkgs) {
                       val ai = p.applicationInfo ?: continue
                       val pkg = p.packageName
                       if (pkg == ctx.packageName) continue
                       val sys = (ai.flags and ApplicationInfo.FLAG_SYSTEM) != 0
-                      val isSpy = pkg in spyP ||
-                          (!sys && spyC.isNotEmpty() && Stalker.certHashes(p).any { it in spyC })
-                      if (isSpy) {
+                      val byPkg = pkg in spyP
+                      val byCert = !byPkg && !sys && spyC.isNotEmpty() && Stalker.certHashes(p).any { it in spyC }
+                      if (byPkg || byCert) {
                           spy.add(pkg)
+                          spyBy[pkg] = if (byPkg) "pkg" else "cert"
                           labels[pkg] = pm.getApplicationLabel(ai).toString()
                       }
                       if (sys) continue
                       installed.add(pkg)
                       labels[pkg] = pm.getApplicationLabel(ai).toString()
+                      val gr = granted(p)
+                      certOf(p)?.let { certs.add(pkg + "|" + it) }
+                      for (sp in sensitivePerms) if (sp in gr) perms.add(pkg + "|" + sp)
                       val installer = try {
                           pm.getInstallSourceInfo(pkg).installingPackageName
                       } catch (e: Exception) {
@@ -5989,7 +7384,7 @@ jobs:
                       }
                       if (installer == null || installer !in stores) {
                           side.add(pkg)
-                          val g = granted(p)
+                          val g = gr
                           val sensitive = Manifest.permission.READ_SMS in g ||
                               Manifest.permission.READ_CALL_LOG in g ||
                               (Manifest.permission.CAMERA in g && Manifest.permission.RECORD_AUDIO in g)
@@ -6041,7 +7436,7 @@ jobs:
                       // ignora
                   }
 
-                  return Snap(installed, side, risk, acc, admin, listeners, spy, labels)
+                  return Snap(installed, side, risk, acc, admin, listeners, spy, labels, perms, certs, spyBy)
               }
 
               private fun saveStatus(ctx: Context, cur: Snap) {
@@ -6100,9 +7495,12 @@ jobs:
                       val bLst = getSet(pr, "b_lst")
                       val bRisk = getSet(pr, "b_risk")
                       val bSide = getSet(pr, "b_side")
+                      val bInst = getSet(pr, "b_inst")
+                      val bPerm = getSet(pr, "b_perm")
+                      val trust = getSet(pr, "trusted")
 
                       for (p in cur.acc) {
-                          if (p !in bAcc) {
+                          if (p !in bAcc && p !in trust && toggle(ctx, "alert_acc")) {
                               alerts.add(
                                   Alert(
                                       ("acc:" + p).hashCode(), true, tr("Nuovo servizio di accessibilità"),
@@ -6113,7 +7511,7 @@ jobs:
                           }
                       }
                       for (p in cur.admin) {
-                          if (p !in bAdm) {
+                          if (p !in bAdm && p !in trust && toggle(ctx, "alert_adm")) {
                               alerts.add(
                                   Alert(
                                       ("adm:" + p).hashCode(), true, tr("Nuovo amministratore del dispositivo"),
@@ -6124,7 +7522,7 @@ jobs:
                           }
                       }
                       for (p in cur.risk) {
-                          if (p !in bRisk) {
+                          if (p !in bRisk && p !in trust && toggle(ctx, "alert_risk")) {
                               alerts.add(
                                   Alert(
                                       ("risk:" + p).hashCode(), true, tr("App da APK con permessi sensibili"),
@@ -6135,7 +7533,7 @@ jobs:
                           }
                       }
                       for (p in cur.listeners) {
-                          if (p !in bLst) {
+                          if (p !in bLst && p !in trust && toggle(ctx, "alert_lst")) {
                               alerts.add(
                                   Alert(
                                       ("lst:" + p).hashCode(), false, tr("Nuovo lettore di notifiche"),
@@ -6147,7 +7545,7 @@ jobs:
                       }
                       if (alertNewApk(ctx)) {
                           for (p in cur.side) {
-                              if (p !in bSide && p !in cur.spy && p !in cur.risk && p !in cur.acc && p !in cur.admin) {
+                              if (p !in bSide && p !in trust && p !in cur.spy && p !in cur.risk && p !in cur.acc && p !in cur.admin) {
                                   alerts.add(
                                       Alert(
                                           ("apk:" + p).hashCode(), false, tr("Nuova app installata da APK"),
@@ -6156,6 +7554,47 @@ jobs:
                                       )
                                   )
                               }
+                          }
+                      }
+
+                      // Firma cambiata: l'app è stata ricompilata/manomessa o sostituita da un'altra.
+                      if (toggle(ctx, "alert_sig") && pr.contains("b_cert")) {
+                          val bCert = getSet(pr, "b_cert")
+                          val oldBy = HashMap<String, String>()
+                          for (e in bCert) oldBy[e.substringBefore('|')] = e.substringAfter('|')
+                          for (e in cur.certs) {
+                              val pkg = e.substringBefore('|')
+                              val old = oldBy[pkg] ?: continue
+                              if (old != e.substringAfter('|') && pkg in bInst && pkg !in trust && pkg !in cur.spy) {
+                                  alerts.add(
+                                      Alert(
+                                          ("sig:" + pkg).hashCode(), true, tr("Firma dell'app cambiata"),
+                                          lab(pkg) + tr(" ora ha una firma diversa da prima. Può essere stata sostituita da una copia modificata: se non l'hai reinstallata tu, disinstallala."),
+                                          pkg
+                                      )
+                                  )
+                              }
+                          }
+                      }
+
+                      // Nuovi permessi sensibili ottenuti da app già presenti (es. dopo un aggiornamento).
+                      if (toggle(ctx, "alert_perm") && pr.contains("b_perm")) {
+                          val gained = HashMap<String, MutableList<String>>()
+                          for (e in cur.perms) {
+                              if (e in bPerm) continue
+                              val pkg = e.substringBefore('|')
+                              if (pkg !in bInst || pkg in trust || pkg in cur.spy) continue
+                              gained.getOrPut(pkg) { ArrayList() }.add(permName(e.substringAfter('|')))
+                          }
+                          for ((pkg, names) in gained) {
+                              alerts.add(
+                                  Alert(
+                                      ("perm:" + pkg).hashCode(), true, tr("Nuovo permesso sensibile"),
+                                      lab(pkg) + tr(" ha ottenuto l'accesso a: ") + names.distinct().joinToString(", ") +
+                                          tr(". Se non te l'aspettavi, controlla i permessi."),
+                                      pkg
+                                  )
+                              )
                           }
                       }
                   }
@@ -6169,9 +7608,16 @@ jobs:
                       .putStringSet("b_adm", HashSet(cur.admin))
                       .putStringSet("b_lst", HashSet(cur.listeners))
                       .putStringSet("b_spy", HashSet(cur.spy))
+                      .putStringSet("b_perm", HashSet(cur.perms))
+                      .putStringSet("b_cert", HashSet(cur.certs))
                       .putBoolean("init", true)
                       .apply()
                   saveStatus(ctx, cur)
+                  try {
+                      Trash.purge(ctx, false)
+                  } catch (e: Exception) {
+                      // ignora
+                  }
 
                   if (alerts.isNotEmpty()) {
                       val sorted = alerts.sortedByDescending { it.high }
@@ -6197,11 +7643,12 @@ jobs:
                   high.description = tr("App spia, nuovi servizi di accessibilità e amministratori del dispositivo")
                   nm.createNotificationChannel(high)
                   val info = NotificationChannel(CH_INFO, tr("Altri avvisi"), NotificationManager.IMPORTANCE_DEFAULT)
-                  info.description = tr("Nuovi lettori di notifiche e nuove app installate da APK")
+                  info.description = tr("Nuovi lettori di notifiche, nuovi permessi e nuove app installate da APK")
                   nm.createNotificationChannel(info)
               }
 
               private fun post(ctx: Context, a: Alert) {
+                  if (a.id != 9999) logAlert(ctx, a)
                   try {
                       ensureChannels(ctx)
                       val intent = if (a.pkg != null) {
@@ -6245,7 +7692,7 @@ jobs:
                       try {
                           Watch.runCheck(ctx)
                       } catch (e: Exception) {
-                          // riproverà al prossimo giro
+                          Watch.markFailure(ctx)
                       }
                       jobFinished(params, false)
                   }.start()
