@@ -193,7 +193,7 @@ jobs:
                   targetSdk = 34
                   // Il numero di build di GitHub garantisce versionCode sempre crescente.
                   versionCode = 100 + (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0)
-                  versionName = "5.1"
+                  versionName = "5.2"
               }
 
               signingConfigs {
@@ -3299,7 +3299,7 @@ jobs:
                   screen = "intro"
                   box.removeAllViews()
                   text("> GhostALO_", size = 26f, color = green, bold = true, pad = 4)
-                  text(tr("Versione") + " 5.1", size = 12f, color = grey, pad = 1)
+                  text(tr("Versione") + " 5.2", size = 12f, color = grey, pad = 1)
                   text(tr("Nessun accesso a Internet: i dati restano nel telefono."), size = 12f, color = grey, pad = 1)
                   sep()
                   if (Watch.isStale(this)) {
@@ -7824,7 +7824,7 @@ jobs:
                   android:id="@+id/w_state"
                   android:layout_width="wrap_content"
                   android:layout_height="wrap_content"
-                  android:text="??"
+                  android:text="--"
                   android:textColor="#00A329"
                   android:textSize="12sp"
                   android:textStyle="bold"
