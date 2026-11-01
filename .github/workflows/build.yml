@@ -69,6 +69,7 @@ jobs:
         run: |
           APK=app/build/outputs/apk/release/app-release.apk
           cp "$APK" GhostALO.apk
+          cp app/build/outputs/mapping/release/mapping.txt GhostALO-mapping.txt || echo "::warning::mapping.txt non trovato"
           sha256sum GhostALO.apk > GhostALO.apk.sha256
           cat GhostALO.apk.sha256
           APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1)
@@ -85,3 +86,4 @@ jobs:
           files: |
             GhostALO.apk
             GhostALO.apk.sha256
+            GhostALO-mapping.txt
