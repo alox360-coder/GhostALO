@@ -28,6 +28,19 @@ class ProjectRulesTest {
     }
 
     @Test
+    fun impuntaCertificatoValida() {
+        val f = File("certificato.sha256").let { if (it.exists()) it else File("../certificato.sha256") }
+        assertTrue(f.readText().trim().matches(Regex("[0-9a-f]{64}")))
+    }
+
+    @Test
+    fun versionCodeDaVersionName() {
+        val g = moduleFile("build.gradle.kts").readText()
+        assertTrue(g.contains("val appVersion = \""))
+        assertFalse("Il versionCode non deve dipendere dal numero di build", g.contains("GITHUB_RUN_NUMBER"))
+    }
+
+    @Test
     fun lavoroInterrottoSiFerma() {
         var fermato = false
         val t = Thread {

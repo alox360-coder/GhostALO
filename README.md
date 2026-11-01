@@ -41,6 +41,14 @@ Informativa completa: [PRIVACY.md](PRIVACY.md). Elenco dei permessi con il motiv
 
 Gli APK sono nella sezione **Releases**. Ogni release contiene anche `GhostALO.apk.sha256` (confronta l'impronta SHA-256 del file scaricato) e `GhostALO-mapping.txt` (serve a rileggere i rapporti di errore). Le release firmate con la chiave del progetto hanno sempre lo stesso certificato; una release marcata "pre-release" o "TEST" è firmata con una chiave di prova.
 
+Impronta SHA-256 del certificato di firma (la stessa è nel file `certificato.sha256`, che il Build controlla a ogni release):
+
+```
+43:F0:27:8E:87:C7:ED:A1:05:AE:37:33:1B:58:92:E3:D0:8C:E0:37:E8:57:13:4A:6A:7E:2E:74:11:2C:98:10
+```
+
+Per verificarla su un computer con gli Android build-tools: `apksigner verify --print-certs GhostALO.apk`.
+
 ## Compilare
 
 ```
@@ -49,7 +57,7 @@ Gli APK sono nella sezione **Releases**. Ogni release contiene anche `GhostALO.a
 
 Senza variabili d'ambiente di firma l'APK è firmato con la chiave di prova di Android. Per firmare con la propria chiave impostare `SIGNING_KEYSTORE_FILE`, `SIGNING_STORE_PASSWORD`, `SIGNING_KEY_ALIAS`, `SIGNING_KEY_PASSWORD` (in GitHub Actions: i quattro secrets omonimi, con il keystore in base64 in `SIGNING_KEYSTORE_B64`). Non inserire mai chiavi nel repository.
 
-Il `versionCode` in GitHub Actions è `100 + numero della build`; in locale si può fissare con `-PghostaloVersionCode=NNN`.
+La versione si cambia in un solo posto (`appVersion` in `app/build.gradle.kts`); il `versionCode` ne deriva (1.0 → 10000, 1.2 → 10200) ed è uguale su GitHub, F-Droid e in locale. La build in GitHub Actions si ferma se mancano le chiavi di firma; per una prova senza chiave si lancia a mano il Build con l'opzione "prova".
 
 ## Test
 

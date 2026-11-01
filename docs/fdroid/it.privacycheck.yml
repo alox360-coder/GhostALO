@@ -17,15 +17,14 @@ Repo: https://github.com/alox360-coder/GhostALO.git
 
 Builds:
   - versionName: '1.0'
-    versionCode: 1000
-    commit: v1.0
+    versionCode: 10000
+    # Qui va l'HASH COMPLETO del commit del tag v1.0 (non il nome del tag): git rev-parse v1.0
+    commit: SOSTITUISCI_CON_HASH_COMPLETO
     subdir: app
     gradle:
       - yes
-    gradleprops:
-      - ghostaloVersionCode=1000
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
 CurrentVersion: '1.0'
-CurrentVersionCode: 1000
+CurrentVersionCode: 10000

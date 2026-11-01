@@ -8,6 +8,14 @@ plugins {
 val keystorePath: String? = System.getenv("SIGNING_KEYSTORE_FILE")
 val hasReleaseKey: Boolean = keystorePath != null && File(keystorePath).exists()
 
+// Versione dell'app: l'UNICO posto da cambiare a ogni release.
+// Il versionCode ne deriva (1.0 -> 10000, 1.2 -> 10200, 1.2.3 -> 10203) ed è lo stesso
+// per GitHub, F-Droid e build locali, così gli aggiornamenti restano coerenti.
+val appVersion = "1.0"
+val appVersionCode: Int = appVersion.split(".").map { it.toInt() }.let { p ->
+    p[0] * 10000 + (p.getOrNull(1) ?: 0) * 100 + (p.getOrNull(2) ?: 0)
+}
+
 android {
     namespace = "it.privacycheck"
     compileSdk = 34
@@ -16,11 +24,8 @@ android {
         applicationId = "it.privacycheck"
         minSdk = 30
         targetSdk = 34
-        // Il numero di build di GitHub garantisce versionCode sempre crescente.
-        // Per F-Droid o build locali si può fissare con -PghostaloVersionCode=NNN.
-        versionCode = (project.findProperty("ghostaloVersionCode") as String?)?.toIntOrNull()
-            ?: (100 + (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0))
-        versionName = "1.0"
+        versionCode = appVersionCode
+        versionName = appVersion
     }
 
     signingConfigs {

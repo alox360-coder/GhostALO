@@ -132,6 +132,12 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun appVersion(): String = try {
+        packageManager.getPackageInfo(packageName, 0).versionName ?: ""
+    } catch (e: Exception) {
+        ""
+    }
+
     private fun showLock() {
         locked = true
         box.removeAllViews()
@@ -333,7 +339,7 @@ class MainActivity : Activity() {
         screen = "intro"
         box.removeAllViews()
         text("> GhostALO_", size = 26f, color = green, bold = true, pad = 4)
-        text(tr("Versione") + " 1.0", size = 12f, color = grey, pad = 1)
+        text(tr("Versione") + " " + appVersion(), size = 12f, color = grey, pad = 1)
         text(tr("Nessun accesso a Internet: i dati restano nel telefono."), size = 12f, color = grey, pad = 1)
         sep()
         if (Watch.isStale(this)) {
