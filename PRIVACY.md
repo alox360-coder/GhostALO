@@ -1,6 +1,6 @@
 # Privacy Policy / Informativa sulla privacy — GhostALO
 
-Last updated / Ultimo aggiornamento: 2026
+Last updated / Ultimo aggiornamento: 1 November 2026 / 1 novembre 2026
 
 ## English
 
@@ -25,8 +25,15 @@ The list of known spy apps comes from the public *stalkerware-indicators* projec
 ### Children
 The app is not directed at children and collects no data from anyone.
 
+### Local features worth knowing
+- **App lock** uses your phone's own screen lock (PIN, pattern, fingerprint). The app never sees or stores it.
+- **Trash**: files you clean are moved to a hidden folder (`.GhostALO_trash`) on your phone's storage and deleted for good after 7 or 30 days. Nothing leaves the phone.
+- **Crash report**: if the app crashes, a text report is saved on the phone. It is shared only if you choose to, from the app.
+- **Microphone and camera list** only shows which apps hold the permission and when they were last opened; it cannot hear or see anything.
+- **Clear clipboard** empties the clipboard; the app does not read it.
+
 ### Contact
-[write your contact e-mail here]
+Questions or problems: open an issue at https://github.com/alox360-coder/PrivALO-Destroyer/issues. Please do **not** post sensitive personal information or details of a situation of abuse in a public issue.
 
 ## Italiano
 
@@ -51,5 +58,12 @@ L'elenco delle app spia note deriva dal progetto pubblico *stalkerware-indicator
 ### Minori
 L'app non è rivolta ai minori e non raccoglie dati da nessuno.
 
+### Funzioni locali da conoscere
+- Il **blocco dell'app** usa il blocco schermo del telefono (PIN, sequenza, impronta). L'app non lo vede e non lo salva.
+- **Cestino**: i file puliti vengono spostati in una cartella nascosta (`.GhostALO_trash`) nella memoria del telefono e cancellati davvero dopo 7 o 30 giorni. Nulla lascia il telefono.
+- **Rapporto errori**: se l'app si chiude per un errore, un rapporto di testo viene salvato nel telefono. Lo condividi solo se vuoi, dall'app.
+- L'elenco **microfono e fotocamera** mostra solo quali app hanno il permesso e quando sono state aperte l'ultima volta; non può né ascoltare né vedere nulla.
+- **Svuota appunti** svuota gli appunti; l'app non li legge.
+
 ### Contatti
-[scrivi qui la tua e-mail di contatto]
+Domande o problemi: apri una segnalazione su https://github.com/alox360-coder/PrivALO-Destroyer/issues. **Non** scrivere in una segnalazione pubblica informazioni personali delicate o dettagli di una situazione di abuso.

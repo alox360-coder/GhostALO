@@ -17,8 +17,10 @@ android {
         minSdk = 30
         targetSdk = 34
         // Il numero di build di GitHub garantisce versionCode sempre crescente.
-        versionCode = 100 + (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0)
-        versionName = "5.7"
+        // Per F-Droid o build locali si può fissare con -PghostaloVersionCode=NNN.
+        versionCode = (project.findProperty("ghostaloVersionCode") as String?)?.toIntOrNull()
+            ?: (100 + (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0))
+        versionName = "1.0"
     }
 
     signingConfigs {

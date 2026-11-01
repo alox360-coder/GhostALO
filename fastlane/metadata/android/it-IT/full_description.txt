@@ -1,0 +1,22 @@
+GhostALO controlla la privacy del tuo telefono e lo ripulisce, e lo fa senza Internet: l'app non ha il permesso di usare la rete, quindi non può inviare nulla fuori dal telefono. Niente pubblicità, niente statistiche, niente account.
+
+Cosa fa
+
+• Controllo rapido: un tocco per sapere se è tutto a posto, con tre risultati chiari (minaccia nota, da verificare, nessun indicatore) e l'elenco dei controlli eseguiti o non completati.
+• App spia: confronta le app installate con l'elenco pubblico di stalkerware noti (nomi dei pacchetti e firme). L'elenco si può aggiornare da file, senza Internet.
+• Avvisi in background: una notifica se compare una nuova app spia, un servizio di accessibilità, un amministratore del dispositivo o un lettore di notifiche, se un'app ottiene un permesso sensibile o se la sua firma cambia.
+• Permessi: chi usa fotocamera e microfono, con da quanto tempo le app non vengono aperte e un tasto per togliere il permesso.
+• Tracker, APK scaricati, app senza icona, profili aggiuntivi, rete Wi-Fi, root e impostazioni di sicurezza del dispositivo.
+• Pulizia: file temporanei, miniature, APK già installati, duplicati, download incompleti, file grandi e vecchi, media vecchi di WhatsApp e Telegram, cartelle di app disinstallate, appunti.
+• Cestino: i file eliminati restano recuperabili per 7 o 30 giorni. Prima di eliminare, l'app ricontrolla che il file non sia cambiato.
+• Blocco dell'app con il PIN, la sequenza o l'impronta del telefono. Widget per la schermata Home.
+
+Onesto sui limiti
+
+GhostALO non è un antivirus. Cerca indizi e li confronta con un elenco noto: un risultato pulito non garantisce che il telefono sia sicuro, e un avviso non è una prova. Android non permette a un'app di sapere quando un'altra usa microfono e fotocamera: per questo l'app indica chi potrebbe farlo, non chi lo fa. Se sospetti di essere sorvegliato, valuta che chi ti controlla potrebbe accorgersi di una pulizia o di una disinstallazione improvvisa.
+
+Aperta e verificabile
+
+Il codice è pubblico (licenza GPL-3.0). Ogni versione ha la sua impronta SHA-256 per verificare il file scaricato.
+
+L'elenco delle app spia deriva dal progetto pubblico stalkerware-indicators di Echap (CC BY 4.0).

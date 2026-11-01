@@ -1,0 +1,31 @@
+# BOZZA per la richiesta di inserimento in F-Droid (repository fdroiddata).
+# Da rivedere con le regole correnti di F-Droid prima di inviarla, e da usare solo dopo
+# aver creato il tag v1.0 sul repository.
+Categories:
+  - Security
+  - System
+License: GPL-3.0-only
+AuthorName: alox360-coder
+WebSite: https://github.com/alox360-coder/PrivALO-Destroyer
+SourceCode: https://github.com/alox360-coder/PrivALO-Destroyer
+IssueTracker: https://github.com/alox360-coder/PrivALO-Destroyer/issues
+
+AutoName: GhostALO
+
+RepoType: git
+Repo: https://github.com/alox360-coder/PrivALO-Destroyer.git
+
+Builds:
+  - versionName: '1.0'
+    versionCode: 1000
+    commit: v1.0
+    subdir: app
+    gradle:
+      - yes
+    gradleprops:
+      - ghostaloVersionCode=1000
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: '1.0'
+CurrentVersionCode: 1000

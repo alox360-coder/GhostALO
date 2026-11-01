@@ -1,0 +1,22 @@
+GhostALO checks your phone's privacy and cleans it up, without Internet: the app has no network permission, so it cannot send anything out of your phone. No ads, no analytics, no accounts.
+
+What it does
+
+• Quick check: one tap tells you whether everything is fine, with three clear outcomes (known threat, to check, no indicator) and a list of the checks that ran or could not complete.
+• Spy apps: compares installed apps with the public list of known stalkerware (package names and signatures). The list can be updated from a file, without Internet.
+• Background alerts: a notification when a new spy app, accessibility service, device administrator or notification listener appears, when an app gains a sensitive permission or when its signature changes.
+• Permissions: who has camera and microphone access, how long ago each app was opened, and a shortcut to remove the permission.
+• Trackers, downloaded APKs, apps without an icon, extra profiles, Wi-Fi network, root and device security settings.
+• Cleaning: temporary files, thumbnails, installed APKs, duplicates, incomplete downloads, large old files, old WhatsApp and Telegram media, folders of uninstalled apps, clipboard.
+• Trash: deleted files stay recoverable for 7 or 30 days. Before deleting, the app re-checks that the file has not changed.
+• App lock using your phone's PIN, pattern or fingerprint. Home screen widgets.
+
+Honest about its limits
+
+GhostALO is not an antivirus. It looks for clues and compares them with a known list: a clean result does not guarantee your phone is safe, and a warning is not proof. Android does not let an app know when another one uses the microphone or camera: so the app shows who could do it, not who does. If you suspect you are being monitored, keep in mind that whoever is watching you may notice a sudden cleanup or uninstall.
+
+Open and verifiable
+
+The code is public (GPL-3.0 license). Every release has its SHA-256 checksum so you can verify the downloaded file.
+
+The spy app list derives from the public stalkerware-indicators project by Echap (CC BY 4.0).

@@ -1,51 +1,45 @@
 # GhostALO
 
-App Android in stile terminale (verde su nero) per controllare la privacy del telefono e fare pulizia.
+App Android in stile terminale (verde su nero) per controllare la privacy del telefono e fare pulizia, **senza Internet**: l'app non ha il permesso di usare la rete, quindi non può inviare nulla fuori dal telefono. Niente pubblicità, statistiche o account.
 
-- **Controllo rapido**: un tocco per sapere se è tutto a posto, con le voci da verificare. Il menu è diviso in Sicurezza, Privacy, Pulizia e Strumenti.
+*English summary at the bottom.*
+
+## Cosa fa
+
+**Sicurezza e app spia**
+- **Controllo rapido**: un tocco per sapere se è tutto a posto. Tre esiti (minaccia nota, da verificare, nessun indicatore) e l'elenco dei controlli eseguiti e di quelli non completati: un controllo non eseguito non conta mai come superato.
 - **Sicurezza del dispositivo**: punteggio su 100 (blocco schermo, cifratura, aggiornamenti, debug USB, DNS privato, root, accessibilità…).
-- **Scansione privacy + app spia**: confronta le app installate con l'elenco pubblico di stalkerware noti (nomi di pacchetto e firme) e segnala permessi e servizi a rischio.
-- **Rilevatore di tracker**: cerca nel codice delle app le librerie pubblicitarie e di tracciamento più note.
-- **Pulizia**: APK già scaricati, file temporanei, miniature, cartelle vuote, duplicati, cache e app non usate da tempo. Ogni eliminazione richiede conferma. Il pulsante "Libera cache di sistema" chiede ad Android di fare spazio cancellando le cache delle altre app (il risultato dipende dal telefono).
-- **File grandi e vecchi**: file pesanti non modificati da tempo (soglia a scelta), con elenco e conferma. **Cartelle di app disinstallate**: cartelle con nome da app non più installate (solo indizi). La pulizia include anche download incompleti e archivi vecchi in Download, e un tasto per cancellare gli appunti.
-- **Codice ridotto con R8**: ogni release include GhostALO-mapping.txt per rileggere gli errori (i report di crash mostrano nomi abbreviati).
-- **Test automatici** (cartella app/src/test): importazione elenco spia, impronte dei file, assenza del permesso Internet, traduzioni.
-- **Microfono e fotocamera**: elenco delle app con il permesso attivo e da quanto non vengono aperte, con scorciatoia per toglierlo.
-- **Blocco dell'app**: sblocco con PIN, sequenza o impronta del telefono (nessun PIN salvato), richiesto dopo il tempo scelto.
-- **Cestino**: le pulizie spostano i file in una cartella recuperabile per 7 o 30 giorni (ripristino con un tocco). **Elenco app spia aggiornabile da file** (ioc.yaml di Echap, senza Internet). **Controllo firme**: avviso se la firma di un'app cambia. **Esporta elenco delle app** in un file di testo.
-- **Risultati prudenti**: il controllo rapido distingue minaccia nota, da verificare e nessun indicatore, elenca i controlli eseguiti e quelli non completati. Prima di eliminare, l'app ricontrolla che i file non siano cambiati dopo la scansione.
-- **Pulizia WhatsApp e Telegram**: media ricevuti vecchi, note vocali, copie dei file inviati e stati già visti, con soglia a scelta (30-365 giorni). Le chat non vengono toccate; ogni eliminazione richiede conferma.
-- **Analisi dello spazio per tipo**: foto, video, audio, documenti, archivi e app con barre in stile terminale, più i file più grandi.
-- **App in background**: quali app hanno tenuto attivo un servizio in primo piano e per quanto, confrontato con l uso reale; collegamenti alle impostazioni di batteria di Android.
-- **App senza icona e cartelle nascoste**: elenca le app installate senza icona nel menu (con permessi e servizi) e le cartelle nascoste con foto o video. Solo indizi.
-- **Spazio privato e profili**: segnala se esistono altri profili (lavoro, clone, spazio privato) e porta alle impostazioni di Android.
-- **Rete Wi-Fi e reti pubbliche**: tipo di protezione del Wi-Fi, VPN, DNS privato e consigli. Non rileva attacchi man-in-the-middle.
-- **Cookie e tracciamento**: elenco dei browser installati con collegamento alla loro scheda (dove si cancellano i dati) e consigli. L'app non può cancellare i cookie al posto tuo: Android lo vieta.
-- **Permessi: chi usa cosa**: per ogni permesso (fotocamera, microfono, posizione, SMS…) le app che lo hanno, con collegamento alla loro scheda.
-- **Controllo degli APK scaricati**: controlla i file .apk prima dell'installazione (app spia note, firma diversa, permessi sensibili).
-- **Avvisi in background**: ogni 30 minuti circa controlla in silenzio e manda una notifica se compare un'app spia nota, un nuovo servizio di accessibilità, un nuovo amministratore del dispositivo, un nuovo lettore di notifiche o un'app installata da APK con permessi sensibili.
-- **Impostazioni avvisi**: frequenza del controllo (15 min-6 ore), tipi di avviso, app fidate e storico degli ultimi 50 avvisi; avviso quando un'app ottiene un nuovo permesso sensibile (fotocamera, microfono, SMS, posizione in background…).
-- **Rapporto errori locale**: se l'app si chiude per un errore, al prossimo avvio puoi condividere il rapporto; nulla viene inviato in automatico.
-- **Widget** per la schermata Home: una tessera piccola (1x1, come un'icona) con OK, !! o XX e una versione estesa con i dettagli.
+- **Scansione privacy e app spia**: confronta le app installate con l'elenco pubblico di stalkerware noti (nomi di pacchetto e firme) e segnala permessi e servizi a rischio. L'elenco si può aggiornare da file (ioc.yaml di Echap), senza Internet.
+- **Avvisi in background** (ogni 15 minuti - 6 ore, a scelta): notifica per una nuova app spia, un nuovo servizio di accessibilità, amministratore del dispositivo o lettore di notifiche, un'app da APK con permessi sensibili, un nuovo permesso sensibile su un'app già installata, o una firma cambiata. Storico degli ultimi 50 avvisi e app fidate.
+- **Controllo degli APK scaricati** prima dell'installazione, **rilevatore di tracker** (librerie note nel codice delle app), **app senza icona e cartelle nascoste**, **spazio privato e profili**, **rete Wi-Fi e reti pubbliche**.
 
-## Privacy
+**Privacy**
+- **Permessi: chi usa cosa**, con collegamento alla scheda di ogni app.
+- **Microfono e fotocamera**: app con il permesso attivo, da quanto non vengono aperte e un tasto per toglierlo.
+- **Cookie e tracciamento**: browser installati, collegamento alle loro schede e consigli (Android non permette di cancellare i cookie al posto tuo).
+- **Blocco dell'app** con il PIN, la sequenza o l'impronta del telefono (nessun codice salvato), richiesto dopo il tempo scelto.
 
-Informativa completa / full policy: [PRIVACY.md](PRIVACY.md). L'app è disponibile in italiano e inglese (segue la lingua del telefono).
+**Pulizia**
+- File temporanei, miniature, APK già installati, cartelle vuote, **duplicati** (controllo veloce e poi hash completo), download incompleti, archivi vecchi, cache e app non usate da tempo, appunti.
+- **File grandi e vecchi**, **cartelle di app disinstallate** (indizi), **WhatsApp e Telegram** (media vecchi, note vocali, stati già visti; le chat non vengono toccate), analisi dello spazio per tipo, app in background.
+- **Cestino**: i file puliti restano recuperabili per 7 o 30 giorni. Prima di eliminare, l'app ricontrolla che i file non siano cambiati dopo la scansione. Ogni eliminazione richiede conferma.
 
-L'app **non ha il permesso Internet**: non può inviare nulla fuori dal telefono. Non modifica né elimina niente senza la tua conferma.
+**Altro**: widget per la Home (piccolo e esteso), esporta l'elenco delle app, rapporto errori **solo locale** (lo condividi tu, se vuoi), italiano e inglese (segue la lingua del telefono).
 
 ## Limiti
 
-- Non può leggere i dati di altre app né vedere in tempo reale chi usa fotocamera e microfono.
-- Non può svuotare cache e cronologia di altre app (Android lo vieta).
-- Non è un antivirus: confronta app e firme con un elenco noto e cerca indizi. I risultati sono indizi, non prove.
-- L'elenco di app spia può non essere completo.
+- Non è un antivirus: confronta app e firme con un elenco noto e cerca indizi. **I risultati sono indizi, non prove.** L'elenco può non essere completo.
+- Non può leggere i dati di altre app né vedere in tempo reale chi usa fotocamera e microfono (Android lo vieta): l'app mostra chi *potrebbe* farlo, non chi lo fa. La prova concreta è la Dashboard privacy del telefono.
+- Non può svuotare cache e cronologia di altre app.
+- Se temi di essere sorvegliato da una persona, considera che una pulizia o una disinstallazione improvvisa può insospettirla.
+
+## Privacy e permessi
+
+Informativa completa: [PRIVACY.md](PRIVACY.md). Elenco dei permessi con il motivo di ciascuno: [docs/PERMISSIONS.md](docs/PERMISSIONS.md).
 
 ## Scaricare e verificare
 
-Gli APK sono nella sezione **Releases**. Ogni release contiene anche `GhostALO.apk.sha256`:
-confronta l'impronta SHA-256 del file scaricato con quella indicata. Le release firmate con la chiave del progetto
-hanno sempre lo stesso certificato; una release marcata "pre-release" è firmata con una chiave di prova.
+Gli APK sono nella sezione **Releases**. Ogni release contiene anche `GhostALO.apk.sha256` (confronta l'impronta SHA-256 del file scaricato) e `GhostALO-mapping.txt` (serve a rileggere i rapporti di errore). Le release firmate con la chiave del progetto hanno sempre lo stesso certificato; una release marcata "pre-release" o "TEST" è firmata con una chiave di prova.
 
 ## Compilare
 
@@ -53,16 +47,24 @@ hanno sempre lo stesso certificato; una release marcata "pre-release" è firmata
 ./gradlew assembleRelease
 ```
 
-Senza variabili d'ambiente di firma l'APK è firmato con la chiave di prova di Android. Per firmare con la propria chiave
-impostare `SIGNING_KEYSTORE_FILE`, `SIGNING_STORE_PASSWORD`, `SIGNING_KEY_ALIAS`, `SIGNING_KEY_PASSWORD`
-(in GitHub Actions: i quattro secrets omonimi, con il keystore in base64 in `SIGNING_KEYSTORE_B64`).
+Senza variabili d'ambiente di firma l'APK è firmato con la chiave di prova di Android. Per firmare con la propria chiave impostare `SIGNING_KEYSTORE_FILE`, `SIGNING_STORE_PASSWORD`, `SIGNING_KEY_ALIAS`, `SIGNING_KEY_PASSWORD` (in GitHub Actions: i quattro secrets omonimi, con il keystore in base64 in `SIGNING_KEYSTORE_B64`). Non inserire mai chiavi nel repository.
 
-Non inserire mai chiavi nel repository.
+Il `versionCode` in GitHub Actions è `100 + numero della build`; in locale si può fissare con `-PghostaloVersionCode=NNN`.
 
-## Crediti e licenza dei dati
+## Test
 
-L'elenco di app spia deriva da [stalkerware-indicators](https://github.com/AssoEchap/stalkerware-indicators)
-di Echap, licenza [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Nessuna garanzia di completezza o accuratezza.
+```
+./gradlew testDebugUnitTest
+```
 
-Se sospetti che un partner o un familiare violento ti controlli il telefono, rimuovere un'app spia potrebbe avvisarlo:
-valuta prima di contattare un centro antiviolenza (in Italia: 1522, gratuito e attivo 24 ore su 24).
+Controllano, tra l'altro, l'importazione dell'elenco spia, le impronte dei file, l'assenza del permesso Internet e la coerenza delle traduzioni. Sono eseguiti anche a ogni build.
+
+## Licenza e crediti
+
+Codice sotto licenza **GPL-3.0** (vedi [LICENSE](LICENSE)). L'elenco delle app spia incluso nell'app deriva dal progetto pubblico [stalkerware-indicators](https://github.com/AssoEchap/stalkerware-indicators) dell'associazione Echap, licenza CC BY 4.0.
+
+---
+
+## English summary
+
+GhostALO is a terminal-style Android app that checks your phone's privacy and cleans it up, **with no Internet permission**: it cannot send anything out of your phone. It compares installed apps with the public list of known stalkerware, warns you in the background about new accessibility services, device administrators, notification listeners, new sensitive permissions and changed signatures, lists apps with microphone and camera access, detects trackers, and cleans junk files, duplicates, old chat media and more, with a recoverable trash and a re-check before every deletion. The app is in Italian and English. It is **not an antivirus**: results are clues, not proof. Licensed under GPL-3.0. See [PRIVACY.md](PRIVACY.md) and [docs/PERMISSIONS.md](docs/PERMISSIONS.md).

@@ -333,7 +333,7 @@ class MainActivity : Activity() {
         screen = "intro"
         box.removeAllViews()
         text("> GhostALO_", size = 26f, color = green, bold = true, pad = 4)
-        text(tr("Versione") + " 5.7", size = 12f, color = grey, pad = 1)
+        text(tr("Versione") + " 1.0", size = 12f, color = grey, pad = 1)
         text(tr("Nessun accesso a Internet: i dati restano nel telefono."), size = 12f, color = grey, pad = 1)
         sep()
         if (Watch.isStale(this)) {
