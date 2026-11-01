@@ -57,20 +57,20 @@ jobs:
       - name: Verifica firma e crea checksum
         run: |
           APK=app/build/outputs/apk/release/app-release.apk
-          cp "$APK" ControlloPrivacy.apk
-          sha256sum ControlloPrivacy.apk > ControlloPrivacy.apk.sha256
-          cat ControlloPrivacy.apk.sha256
+          cp "$APK" GhostALO.apk
+          sha256sum GhostALO.apk > GhostALO.apk.sha256
+          cat GhostALO.apk.sha256
           APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1)
           if [ -n "$APKSIGNER" ]; then
-            "$APKSIGNER" verify --print-certs ControlloPrivacy.apk | grep -E "SHA-256" | tee -a "$GITHUB_STEP_SUMMARY" || true
+            "$APKSIGNER" verify --print-certs GhostALO.apk | grep -E "SHA-256" | tee -a "$GITHUB_STEP_SUMMARY" || true
           fi
 
       - name: Pubblica la release
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           tag_name: build-${{ github.run_number }}
-          name: Controllo Privacy (build ${{ github.run_number }})
+          name: GhostALO (build ${{ github.run_number }})
           prerelease: ${{ env.SIGNED != 'yes' }}
           files: |
-            ControlloPrivacy.apk
-            ControlloPrivacy.apk.sha256
+            GhostALO.apk
+            GhostALO.apk.sha256
