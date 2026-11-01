@@ -47,6 +47,17 @@ jobs:
             echo "::warning::Chiavi di firma non configurate: l'APK sarà firmato con una chiave di prova."
           fi
 
+      - name: Test automatici
+        continue-on-error: true
+        run: |
+          if ./gradlew testDebugUnitTest --no-daemon --stacktrace; then
+            echo "Test automatici: tutti passati." | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::Qualche test automatico non è passato: guarda il log di questo passaggio."
+            echo "ATTENZIONE: qualche test automatico non è passato." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
       - name: Compila (release)
         env:
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
@@ -69,7 +80,7 @@ jobs:
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           tag_name: build-${{ github.run_number }}
-          name: GhostALO (build ${{ github.run_number }})
+          name: ${{ env.SIGNED == 'yes' && format('GhostALO (build {0})', github.run_number) || format('GhostALO TEST - chiave di prova (build {0})', github.run_number) }}
           prerelease: ${{ env.SIGNED != 'yes' }}
           files: |
             GhostALO.apk
