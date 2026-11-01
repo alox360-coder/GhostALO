@@ -243,6 +243,10 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun items(n: Int): String = if (n == 1) tr("1 elemento") else trf("%s elementi", n)
+
+    private fun folders(n: Int): String = if (n == 1) tr("1 cartella") else trf("%s cartelle", n)
+
     private fun fmt(bytes: Long): String = Formatter.formatFileSize(this, bytes)
 
     // ---------- Menu ----------
@@ -254,7 +258,7 @@ class MainActivity : Activity() {
         screen = "intro"
         box.removeAllViews()
         text("> GhostALO_", size = 26f, color = green, bold = true, pad = 4)
-        text(tr("Versione") + " 5.2", size = 12f, color = grey, pad = 1)
+        text(tr("Versione") + " 5.3", size = 12f, color = grey, pad = 1)
         text(tr("Nessun accesso a Internet: i dati restano nel telefono."), size = 12f, color = grey, pad = 1)
         sep()
         if (Watch.isStale(this)) {
@@ -1061,7 +1065,7 @@ class MainActivity : Activity() {
         val sizes = list.toMap()
         val total = text("", size = 13f, color = orange, bold = true, pad = 8)
         fun upd() {
-            total.text = trf("Selezionate: %s cartelle, %s", chosen.size, fmt(chosen.sumOf { sizes[it] ?: 0L }))
+            total.text = tr("Selezionate: ") + folders(chosen.size) + ", " + fmt(chosen.sumOf { sizes[it] ?: 0L })
         }
         text(tr("Controlla: se la cartella contiene dati che ti servono (per esempio i backup di un'app), non selezionarla."), size = 12f, color = grey)
         val root = android.os.Environment.getExternalStorageDirectory().absolutePath
@@ -1081,9 +1085,9 @@ class MainActivity : Activity() {
                     .setTitle(tr("Eliminare queste cartelle?"))
                     .setMessage(
                         if (Trash.active(this)) {
-                            trf("%s cartelle, %s, con tutto il loro contenuto. Vanno nel cestino e puoi ripristinarle.", sel.size, fmt(sel.sumOf { sizes[it] ?: 0L }))
+                            folders(sel.size) + ", " + fmt(sel.sumOf { sizes[it] ?: 0L }) + tr(", con tutto il loro contenuto. Vanno nel cestino e puoi ripristinarle.")
                         } else {
-                            trf("%s cartelle, %s, con tutto il loro contenuto. L'operazione non si può annullare.", sel.size, fmt(sel.sumOf { sizes[it] ?: 0L }))
+                            folders(sel.size) + ", " + fmt(sel.sumOf { sizes[it] ?: 0L }) + tr(", con tutto il loro contenuto. L'operazione non si può annullare.")
                         }
                     )
                     .setPositiveButton(tr("Elimina")) { _, _ ->
@@ -1135,7 +1139,7 @@ class MainActivity : Activity() {
             text(trf("Occupa %s.", fmt(list.sumOf { it.bytes })), size = 13f, color = orange, pad = 8)
             for (b in list) {
                 text(
-                    DateFormat.format("dd/MM/yyyy HH:mm", Date(b.batch)).toString() + "\n" + trf("%s elementi, %s", b.count, fmt(b.bytes)),
+                    DateFormat.format("dd/MM/yyyy HH:mm", Date(b.batch)).toString() + "\n" + items(b.count) + ", " + fmt(b.bytes),
                     size = 13f, pad = 6
                 )
                 button(tr("[>] Ripristina")) {
@@ -1145,7 +1149,7 @@ class MainActivity : Activity() {
                         runOnUiThread {
                             Toast.makeText(
                                 this,
-                                trf("Ripristinati %s elementi", n.first) + if (n.second > 0) trf(" (%s non ripristinati)", n.second) else "",
+                                tr("Ripristinati: ") + items(n.first) + if (n.second > 0) trf(" (%s non ripristinati)", n.second) else "",
                                 Toast.LENGTH_LONG
                             ).show()
                             showTrash()
@@ -1685,7 +1689,7 @@ class MainActivity : Activity() {
             )
             for (c in cats) {
                 val cb = CheckBox(this)
-                cb.text = c.title + " - " + c.count + tr(" elementi, ") + fmt(c.bytes)
+                cb.text = c.title + " - " + items(c.count) + ", " + fmt(c.bytes)
                 cb.setTextColor(green)
                 cb.setTypeface(Typeface.MONOSPACE, Typeface.BOLD)
                 cb.textSize = 14f
@@ -1769,9 +1773,9 @@ class MainActivity : Activity() {
             .setTitle(tr("Conferma eliminazione"))
             .setMessage(
                 if (Trash.active(this)) {
-                    trf("%s elementi (", n) + fmt(b) + trf(") verranno spostati nel cestino e restano recuperabili per %s giorni.", Trash.days(this))
+                    items(n) + " (" + fmt(b) + trf("): vanno nel cestino e restano recuperabili per %s giorni.", Trash.days(this))
                 } else {
-                    trf("Verranno eliminati definitivamente %s elementi (", n) + fmt(b) +
+                    tr("Eliminazione definitiva di ") + items(n) + " (" + fmt(b) +
                         tr("). L'operazione non si può annullare.")
                 }
             )

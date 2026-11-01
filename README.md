@@ -39,7 +39,7 @@ L'app **non ha il permesso Internet**: non può inviare nulla fuori dal telefono
 
 ## Scaricare e verificare
 
-Gli APK sono nella sezione **Releases**. Ogni release contiene anche `ControlloPrivacy.apk.sha256`:
+Gli APK sono nella sezione **Releases**. Ogni release contiene anche `GhostALO.apk.sha256`:
 confronta l'impronta SHA-256 del file scaricato con quella indicata. Le release firmate con la chiave del progetto
 hanno sempre lo stesso certificato; una release marcata "pre-release" è firmata con una chiave di prova.
 

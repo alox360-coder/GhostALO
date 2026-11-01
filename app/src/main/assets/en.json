@@ -633,5 +633,15 @@
 "Nessun indicatore non significa nessuno spyware: è un controllo di indizi, non un antivirus, e non garantisce che il telefono sia pulito.": "No indicator does not mean no spyware: this is a check for hints, not an antivirus, and it does not guarantee the phone is clean.",
 "La frequenza è indicativa: Android può ritardare i controlli per risparmiare batteria, e alcuni telefoni li limitano ancora di più.": "The frequency is indicative: Android may delay the checks to save battery, and some phones limit them even more.",
 "[!!] L'ultimo controllo è molto più vecchio del previsto: il telefono sta probabilmente limitando l'app. Imposta il risparmio energetico su \"Nessuna restrizione\" (pulsante più sotto).": "[!!] The last check is much older than expected: the phone is probably limiting the app. Set battery use to \"No restrictions\" (button below).",
-"[!!] Ultimo controllo non riuscito: ": "[!!] Last check failed: "
+"[!!] Ultimo controllo non riuscito: ": "[!!] Last check failed: ",
+"1 elemento": "1 item",
+"1 cartella": "1 folder",
+"Ripristinati: ": "Restored: ",
+"Eliminazione definitiva di ": "Permanent deletion of ",
+"): vanno nel cestino e restano recuperabili per %s giorni.": "): they go to the trash and stay recoverable for %s days.",
+"Selezionate: ": "Selected: ",
+", con tutto il loro contenuto. Vanno nel cestino e puoi ripristinarle.": ", with all their contents. They go to the trash and you can restore them.",
+", con tutto il loro contenuto. L'operazione non si può annullare.": ", with all their contents. This cannot be undone.",
+"%s elementi": "%s items",
+"%s cartelle": "%s folders"
 }
