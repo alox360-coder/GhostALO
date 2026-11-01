@@ -18,7 +18,7 @@ android {
         targetSdk = 34
         // Il numero di build di GitHub garantisce versionCode sempre crescente.
         versionCode = 100 + (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0)
-        versionName = "5.6"
+        versionName = "5.7"
     }
 
     signingConfigs {
@@ -34,7 +34,11 @@ android {
 
     buildTypes {
         getByName("release") {
-            isMinifyEnabled = false
+            // R8: riduce e ribattezza il codice. Il file mapping.txt (nella release) serve a
+            // rileggere i report di errore.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }

@@ -21,6 +21,13 @@ class ProjectRulesTest {
     }
 
     @Test
+    fun servizioNonEsportato() {
+        val m = moduleFile("src/main/AndroidManifest.xml").readText()
+        val service = Regex("<service[^>]*>", RegexOption.DOT_MATCHES_ALL).find(m)!!.value
+        assertTrue(service.contains("android:exported=\"false\""))
+    }
+
+    @Test
     fun lavoroInterrottoSiFerma() {
         var fermato = false
         val t = Thread {

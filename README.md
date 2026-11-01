@@ -8,6 +8,7 @@ App Android in stile terminale (verde su nero) per controllare la privacy del te
 - **Rilevatore di tracker**: cerca nel codice delle app le librerie pubblicitarie e di tracciamento più note.
 - **Pulizia**: APK già scaricati, file temporanei, miniature, cartelle vuote, duplicati, cache e app non usate da tempo. Ogni eliminazione richiede conferma. Il pulsante "Libera cache di sistema" chiede ad Android di fare spazio cancellando le cache delle altre app (il risultato dipende dal telefono).
 - **File grandi e vecchi**: file pesanti non modificati da tempo (soglia a scelta), con elenco e conferma. **Cartelle di app disinstallate**: cartelle con nome da app non più installate (solo indizi). La pulizia include anche download incompleti e archivi vecchi in Download, e un tasto per cancellare gli appunti.
+- **Codice ridotto con R8**: ogni release include GhostALO-mapping.txt per rileggere gli errori (i report di crash mostrano nomi abbreviati).
 - **Test automatici** (cartella app/src/test): importazione elenco spia, impronte dei file, assenza del permesso Internet, traduzioni.
 - **Microfono e fotocamera**: elenco delle app con il permesso attivo e da quanto non vengono aperte, con scorciatoia per toglierlo.
 - **Blocco dell'app**: sblocco con PIN, sequenza o impronta del telefono (nessun PIN salvato), richiesto dopo il tempo scelto.
