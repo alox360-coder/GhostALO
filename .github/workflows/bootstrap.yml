@@ -116,6 +116,7 @@ jobs:
           - **Rilevatore di tracker**: cerca nel codice delle app le librerie pubblicitarie e di tracciamento più note.
           - **Pulizia**: APK già scaricati, file temporanei, miniature, cartelle vuote, duplicati, cache e app non usate da tempo. Ogni eliminazione richiede conferma. Il pulsante "Libera cache di sistema" chiede ad Android di fare spazio cancellando le cache delle altre app (il risultato dipende dal telefono).
           - **File grandi e vecchi**: file pesanti non modificati da tempo (soglia a scelta), con elenco e conferma. **Cartelle di app disinstallate**: cartelle con nome da app non più installate (solo indizi). La pulizia include anche download incompleti e archivi vecchi in Download, e un tasto per cancellare gli appunti.
+          - **Codice ridotto con R8**: ogni release include GhostALO-mapping.txt per rileggere gli errori (i report di crash mostrano nomi abbreviati).
           - **Test automatici** (cartella app/src/test): importazione elenco spia, impronte dei file, assenza del permesso Internet, traduzioni.
           - **Microfono e fotocamera**: elenco delle app con il permesso attivo e da quanto non vengono aperte, con scorciatoia per toglierlo.
           - **Blocco dell'app**: sblocco con PIN, sequenza o impronta del telefono (nessun PIN salvato), richiesto dopo il tempo scelto.
@@ -196,7 +197,7 @@ jobs:
                   targetSdk = 34
                   // Il numero di build di GitHub garantisce versionCode sempre crescente.
                   versionCode = 100 + (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0)
-                  versionName = "5.6"
+                  versionName = "5.7"
               }
 
               signingConfigs {
@@ -212,7 +213,11 @@ jobs:
 
               buildTypes {
                   getByName("release") {
-                      isMinifyEnabled = false
+                      // R8: riduce e ribattezza il codice. Il file mapping.txt (nella release) serve a
+                      // rileggere i report di errore.
+                      isMinifyEnabled = true
+                      isShrinkResources = true
+                      proguardFiles(getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro")
                       signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
                   }
               }
@@ -239,6 +244,14 @@ jobs:
           dependencies {
               testImplementation("junit:junit:4.13.2")
           }
+          EOF_PRJ
+          mkdir -p "$(dirname 'app/proguard-rules.pro')"
+          cat > 'app/proguard-rules.pro' <<'EOF_PRJ'
+          # Regole R8 di GhostALO.
+          # Activity, servizi e widget del manifest sono mantenuti automaticamente da Android.
+          # Teniamo numeri di riga e nome del file per leggere i report di errore con mapping.txt.
+          -keepattributes SourceFile,LineNumberTable
+          -renamesourcefileattribute SourceFile
           EOF_PRJ
           mkdir -p "$(dirname 'app/src/main/AndroidManifest.xml')"
           cat > 'app/src/main/AndroidManifest.xml' <<'EOF_PRJ'
@@ -280,7 +293,7 @@ jobs:
 
                   <service
                       android:name=".WatchJobService"
-                      android:exported="true"
+                      android:exported="false"
                       android:permission="android.permission.BIND_JOB_SERVICE" />
 
                   <receiver
@@ -3524,7 +3537,7 @@ jobs:
                   screen = "intro"
                   box.removeAllViews()
                   text("> GhostALO_", size = 26f, color = green, bold = true, pad = 4)
-                  text(tr("Versione") + " 5.6", size = 12f, color = grey, pad = 1)
+                  text(tr("Versione") + " 5.7", size = 12f, color = grey, pad = 1)
                   text(tr("Nessun accesso a Internet: i dati restano nel telefono."), size = 12f, color = grey, pad = 1)
                   sep()
                   if (Watch.isStale(this)) {
@@ -8485,6 +8498,13 @@ jobs:
               fun nessunPermessoInternet() {
                   val m = moduleFile("src/main/AndroidManifest.xml").readText()
                   assertFalse("L'app non deve avere il permesso INTERNET", m.contains("android.permission.INTERNET"))
+              }
+
+              @Test
+              fun servizioNonEsportato() {
+                  val m = moduleFile("src/main/AndroidManifest.xml").readText()
+                  val service = Regex("<service[^>]*>", RegexOption.DOT_MATCHES_ALL).find(m)!!.value
+                  assertTrue(service.contains("android:exported=\"false\""))
               }
 
               @Test
