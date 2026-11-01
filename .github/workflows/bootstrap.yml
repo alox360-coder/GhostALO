@@ -147,7 +147,7 @@ jobs:
 
           ## Scaricare e verificare
 
-          Gli APK sono nella sezione **Releases**. Ogni release contiene anche `ControlloPrivacy.apk.sha256`:
+          Gli APK sono nella sezione **Releases**. Ogni release contiene anche `GhostALO.apk.sha256`:
           confronta l'impronta SHA-256 del file scaricato con quella indicata. Le release firmate con la chiave del progetto
           hanno sempre lo stesso certificato; una release marcata "pre-release" è firmata con una chiave di prova.
 
@@ -193,7 +193,7 @@ jobs:
                   targetSdk = 34
                   // Il numero di build di GitHub garantisce versionCode sempre crescente.
                   versionCode = 100 + (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0)
-                  versionName = "5.2"
+                  versionName = "5.3"
               }
 
               signingConfigs {
@@ -935,7 +935,17 @@ jobs:
           "Nessun indicatore non significa nessuno spyware: è un controllo di indizi, non un antivirus, e non garantisce che il telefono sia pulito.": "No indicator does not mean no spyware: this is a check for hints, not an antivirus, and it does not guarantee the phone is clean.",
           "La frequenza è indicativa: Android può ritardare i controlli per risparmiare batteria, e alcuni telefoni li limitano ancora di più.": "The frequency is indicative: Android may delay the checks to save battery, and some phones limit them even more.",
           "[!!] L'ultimo controllo è molto più vecchio del previsto: il telefono sta probabilmente limitando l'app. Imposta il risparmio energetico su \"Nessuna restrizione\" (pulsante più sotto).": "[!!] The last check is much older than expected: the phone is probably limiting the app. Set battery use to \"No restrictions\" (button below).",
-          "[!!] Ultimo controllo non riuscito: ": "[!!] Last check failed: "
+          "[!!] Ultimo controllo non riuscito: ": "[!!] Last check failed: ",
+          "1 elemento": "1 item",
+          "1 cartella": "1 folder",
+          "Ripristinati: ": "Restored: ",
+          "Eliminazione definitiva di ": "Permanent deletion of ",
+          "): vanno nel cestino e restano recuperabili per %s giorni.": "): they go to the trash and stay recoverable for %s days.",
+          "Selezionate: ": "Selected: ",
+          ", con tutto il loro contenuto. Vanno nel cestino e puoi ripristinarle.": ", with all their contents. They go to the trash and you can restore them.",
+          ", con tutto il loro contenuto. L'operazione non si può annullare.": ", with all their contents. This cannot be undone.",
+          "%s elementi": "%s items",
+          "%s cartelle": "%s folders"
           }
           EOF_PRJ
           mkdir -p "$(dirname 'app/src/main/assets/stalkerware.txt')"
@@ -3288,6 +3298,10 @@ jobs:
                   }
               }
 
+              private fun items(n: Int): String = if (n == 1) tr("1 elemento") else trf("%s elementi", n)
+
+              private fun folders(n: Int): String = if (n == 1) tr("1 cartella") else trf("%s cartelle", n)
+
               private fun fmt(bytes: Long): String = Formatter.formatFileSize(this, bytes)
 
               // ---------- Menu ----------
@@ -3299,7 +3313,7 @@ jobs:
                   screen = "intro"
                   box.removeAllViews()
                   text("> GhostALO_", size = 26f, color = green, bold = true, pad = 4)
-                  text(tr("Versione") + " 5.2", size = 12f, color = grey, pad = 1)
+                  text(tr("Versione") + " 5.3", size = 12f, color = grey, pad = 1)
                   text(tr("Nessun accesso a Internet: i dati restano nel telefono."), size = 12f, color = grey, pad = 1)
                   sep()
                   if (Watch.isStale(this)) {
@@ -4106,7 +4120,7 @@ jobs:
                   val sizes = list.toMap()
                   val total = text("", size = 13f, color = orange, bold = true, pad = 8)
                   fun upd() {
-                      total.text = trf("Selezionate: %s cartelle, %s", chosen.size, fmt(chosen.sumOf { sizes[it] ?: 0L }))
+                      total.text = tr("Selezionate: ") + folders(chosen.size) + ", " + fmt(chosen.sumOf { sizes[it] ?: 0L })
                   }
                   text(tr("Controlla: se la cartella contiene dati che ti servono (per esempio i backup di un'app), non selezionarla."), size = 12f, color = grey)
                   val root = android.os.Environment.getExternalStorageDirectory().absolutePath
@@ -4126,9 +4140,9 @@ jobs:
                               .setTitle(tr("Eliminare queste cartelle?"))
                               .setMessage(
                                   if (Trash.active(this)) {
-                                      trf("%s cartelle, %s, con tutto il loro contenuto. Vanno nel cestino e puoi ripristinarle.", sel.size, fmt(sel.sumOf { sizes[it] ?: 0L }))
+                                      folders(sel.size) + ", " + fmt(sel.sumOf { sizes[it] ?: 0L }) + tr(", con tutto il loro contenuto. Vanno nel cestino e puoi ripristinarle.")
                                   } else {
-                                      trf("%s cartelle, %s, con tutto il loro contenuto. L'operazione non si può annullare.", sel.size, fmt(sel.sumOf { sizes[it] ?: 0L }))
+                                      folders(sel.size) + ", " + fmt(sel.sumOf { sizes[it] ?: 0L }) + tr(", con tutto il loro contenuto. L'operazione non si può annullare.")
                                   }
                               )
                               .setPositiveButton(tr("Elimina")) { _, _ ->
@@ -4180,7 +4194,7 @@ jobs:
                       text(trf("Occupa %s.", fmt(list.sumOf { it.bytes })), size = 13f, color = orange, pad = 8)
                       for (b in list) {
                           text(
-                              DateFormat.format("dd/MM/yyyy HH:mm", Date(b.batch)).toString() + "\n" + trf("%s elementi, %s", b.count, fmt(b.bytes)),
+                              DateFormat.format("dd/MM/yyyy HH:mm", Date(b.batch)).toString() + "\n" + items(b.count) + ", " + fmt(b.bytes),
                               size = 13f, pad = 6
                           )
                           button(tr("[>] Ripristina")) {
@@ -4190,7 +4204,7 @@ jobs:
                                   runOnUiThread {
                                       Toast.makeText(
                                           this,
-                                          trf("Ripristinati %s elementi", n.first) + if (n.second > 0) trf(" (%s non ripristinati)", n.second) else "",
+                                          tr("Ripristinati: ") + items(n.first) + if (n.second > 0) trf(" (%s non ripristinati)", n.second) else "",
                                           Toast.LENGTH_LONG
                                       ).show()
                                       showTrash()
@@ -4730,7 +4744,7 @@ jobs:
                       )
                       for (c in cats) {
                           val cb = CheckBox(this)
-                          cb.text = c.title + " - " + c.count + tr(" elementi, ") + fmt(c.bytes)
+                          cb.text = c.title + " - " + items(c.count) + ", " + fmt(c.bytes)
                           cb.setTextColor(green)
                           cb.setTypeface(Typeface.MONOSPACE, Typeface.BOLD)
                           cb.textSize = 14f
@@ -4814,9 +4828,9 @@ jobs:
                       .setTitle(tr("Conferma eliminazione"))
                       .setMessage(
                           if (Trash.active(this)) {
-                              trf("%s elementi (", n) + fmt(b) + trf(") verranno spostati nel cestino e restano recuperabili per %s giorni.", Trash.days(this))
+                              items(n) + " (" + fmt(b) + trf("): vanno nel cestino e restano recuperabili per %s giorni.", Trash.days(this))
                           } else {
-                              trf("Verranno eliminati definitivamente %s elementi (", n) + fmt(b) +
+                              tr("Eliminazione definitiva di ") + items(n) + " (" + fmt(b) +
                                   tr("). L'operazione non si può annullare.")
                           }
                       )
