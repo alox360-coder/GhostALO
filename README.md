@@ -8,6 +8,9 @@ App Android in stile terminale (verde su nero) per controllare la privacy del te
 - **Rilevatore di tracker**: cerca nel codice delle app le librerie pubblicitarie e di tracciamento più note.
 - **Pulizia**: APK già scaricati, file temporanei, miniature, cartelle vuote, duplicati, cache e app non usate da tempo. Ogni eliminazione richiede conferma. Il pulsante "Libera cache di sistema" chiede ad Android di fare spazio cancellando le cache delle altre app (il risultato dipende dal telefono).
 - **File grandi e vecchi**: file pesanti non modificati da tempo (soglia a scelta), con elenco e conferma. **Cartelle di app disinstallate**: cartelle con nome da app non più installate (solo indizi). La pulizia include anche download incompleti e archivi vecchi in Download, e un tasto per cancellare gli appunti.
+- **Test automatici** (cartella app/src/test): importazione elenco spia, impronte dei file, assenza del permesso Internet, traduzioni.
+- **Microfono e fotocamera**: elenco delle app con il permesso attivo e da quanto non vengono aperte, con scorciatoia per toglierlo.
+- **Blocco dell'app**: sblocco con PIN, sequenza o impronta del telefono (nessun PIN salvato), richiesto dopo il tempo scelto.
 - **Cestino**: le pulizie spostano i file in una cartella recuperabile per 7 o 30 giorni (ripristino con un tocco). **Elenco app spia aggiornabile da file** (ioc.yaml di Echap, senza Internet). **Controllo firme**: avviso se la firma di un'app cambia. **Esporta elenco delle app** in un file di testo.
 - **Risultati prudenti**: il controllo rapido distingue minaccia nota, da verificare e nessun indicatore, elenca i controlli eseguiti e quelli non completati. Prima di eliminare, l'app ricontrolla che i file non siano cambiati dopo la scansione.
 - **Pulizia WhatsApp e Telegram**: media ricevuti vecchi, note vocali, copie dei file inviati e stati già visti, con soglia a scelta (30-365 giorni). Le chat non vengono toccate; ogni eliminazione richiede conferma.

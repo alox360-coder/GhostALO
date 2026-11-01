@@ -139,6 +139,10 @@ object Trash {
             .sortedByDescending { it.batch }
     }
 
+    /** Voci nell'indice, anche se in questo momento non si riesce a vedere la cartella. */
+    @Synchronized
+    fun pendingCount(ctx: Context): Int = read(ctx).size
+
     @Synchronized
     fun totalBytes(ctx: Context): Long = batches(ctx).sumOf { it.bytes }
 

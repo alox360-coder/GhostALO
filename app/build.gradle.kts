@@ -18,7 +18,7 @@ android {
         targetSdk = 34
         // Il numero di build di GitHub garantisce versionCode sempre crescente.
         versionCode = 100 + (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0)
-        versionName = "5.3"
+        versionName = "5.6"
     }
 
     signingConfigs {
@@ -39,6 +39,10 @@ android {
         }
     }
 
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
+
     lint {
         abortOnError = false
         checkReleaseBuilds = false
@@ -52,4 +56,8 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+}
+
+dependencies {
+    testImplementation("junit:junit:4.13.2")
 }

@@ -24,6 +24,9 @@ class JunkCategory(val title: String, val hint: String, var checked: Boolean) {
     /** Dimensione e data dei file al momento della scansione: si ricontrollano prima di eliminare. */
     val stamp = HashMap<File, Pair<Long, Long>>()
 
+    /** Impronta di inizio e fine file, solo per le sezioni che la richiedono (file grandi). */
+    val prints = HashMap<File, String>()
+
     fun seal(): JunkCategory {
         for (f in files) stamp[f] = Pair(f.length(), f.lastModified())
         return this
@@ -31,7 +34,9 @@ class JunkCategory(val title: String, val hint: String, var checked: Boolean) {
 
     fun unchanged(f: File): Boolean {
         val s = stamp[f] ?: return true
-        return f.exists() && f.length() == s.first && f.lastModified() == s.second
+        if (!(f.exists() && f.length() == s.first && f.lastModified() == s.second)) return false
+        val p = prints[f] ?: return true
+        return Cleaner.fingerprint(f) == p
     }
 }
 
@@ -75,7 +80,32 @@ object Cleaner {
         return mode == AppOpsManager.MODE_ALLOWED
     }
 
-    private fun hash(f: File): String? {
+    /**
+     * Impronta veloce: dimensione + SHA-1 dei primi e degli ultimi 64 KB.
+     * Serve a escludere subito i file diversi e a ricontrollare un file prima di eliminarlo.
+     */
+    fun fingerprint(f: File): String? {
+        return try {
+            val md = MessageDigest.getInstance("SHA-1")
+            val len = f.length()
+            val chunk = 65536
+            val buf = ByteArray(chunk)
+            java.io.RandomAccessFile(f, "r").use { r ->
+                var n = r.read(buf)
+                if (n > 0) md.update(buf, 0, n)
+                if (len > 2L * chunk) {
+                    r.seek(len - chunk)
+                    n = r.read(buf)
+                    if (n > 0) md.update(buf, 0, n)
+                }
+            }
+            len.toString() + ":" + md.digest().joinToString("") { "%02x".format(it) }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    fun hash(f: File): String? {
         return try {
             val md = MessageDigest.getInstance("SHA-1")
             FileInputStream(f).use { input ->
@@ -173,7 +203,7 @@ object Cleaner {
                     } else if (ext in tempExt) {
                         temp.files.add(e)
                         temp.bytes += len
-                    } else if (!cur.hidden && len >= 51200L) {
+                    } else if (!cur.hidden && len >= 262144L) {
                         candidates.add(e)
                     }
                 }
@@ -185,11 +215,22 @@ object Cleaner {
         for ((size, group) in bySize) {
             Work.check()
             if (group.size < 2 || size > 200L * 1024L * 1024L) continue
-            val byHash = HashMap<String, MutableList<File>>()
+            // Primo passaggio, veloce: stessa impronta di inizio e fine file.
+            val byQuick = HashMap<String, MutableList<File>>()
             for (f in group) {
                 Work.check()
-                val h = hash(f) ?: continue
-                byHash.getOrPut(h) { ArrayList() }.add(f)
+                val q = fingerprint(f) ?: continue
+                byQuick.getOrPut(q) { ArrayList() }.add(f)
+            }
+            // Secondo passaggio: SHA-1 completo solo per i file che sono arrivati fin qui.
+            val byHash = HashMap<String, MutableList<File>>()
+            for (cand in byQuick.values) {
+                if (cand.size < 2) continue
+                for (f in cand) {
+                    Work.check()
+                    val h = hash(f) ?: continue
+                    byHash.getOrPut(h) { ArrayList() }.add(f)
+                }
             }
             for (same in byHash.values) {
                 if (same.size < 2) continue
@@ -351,10 +392,16 @@ object Cleaner {
     }
 
     /** Elimina singoli file. Restituisce (byte liberati, non eliminati). */
-    fun deleteFiles(ctx: Context, files: List<File>, stamps: Map<File, Pair<Long, Long>> = emptyMap()): Pair<Long, Int> {
+    fun deleteFiles(
+        ctx: Context,
+        files: List<File>,
+        stamps: Map<File, Pair<Long, Long>> = emptyMap(),
+        prints: Map<File, String> = emptyMap()
+    ): Pair<Long, Int> {
         val c = JunkCategory("", "", true)
         c.files.addAll(files)
         c.stamp.putAll(stamps)
+        c.prints.putAll(prints)
         return delete(ctx, listOf(c))
     }
 

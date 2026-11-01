@@ -613,18 +613,41 @@ object Watch {
 }
 
 class WatchJobService : JobService() {
+    companion object {
+        // Un solo controllo alla volta, anche se Android avvia il job due volte.
+        private val running = java.util.concurrent.atomic.AtomicBoolean(false)
+    }
+
+    @Volatile
+    private var worker: Thread? = null
+
+    @Volatile
+    private var stopped = false
+
     override fun onStartJob(params: JobParameters): Boolean {
+        if (!running.compareAndSet(false, true)) return false
+        stopped = false
         val ctx = applicationContext
-        Thread {
+        val t = Thread {
             try {
                 Watch.runCheck(ctx)
             } catch (e: Exception) {
                 Watch.markFailure(ctx)
+            } finally {
+                running.set(false)
+                worker = null
             }
-            jobFinished(params, false)
-        }.start()
+            if (!stopped) jobFinished(params, false)
+        }
+        worker = t
+        t.start()
         return true
     }
 
-    override fun onStopJob(params: JobParameters): Boolean = true
+    override fun onStopJob(params: JobParameters): Boolean {
+        // Android ferma il job: fermiamo anche il nostro lavoro e chiediamo di riprovare.
+        stopped = true
+        worker?.interrupt()
+        return true
+    }
 }

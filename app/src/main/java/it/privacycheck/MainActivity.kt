@@ -26,6 +26,7 @@ import android.provider.Settings
 import android.text.format.DateFormat
 import android.text.format.Formatter
 import android.view.Gravity
+import android.view.View
 import android.view.accessibility.AccessibilityManager
 import android.view.inputmethod.InputMethodManager
 import android.widget.Button
@@ -80,6 +81,8 @@ class MainActivity : Activity() {
         t.start()
     }
     private var token = 0
+    private var locked = false
+    private var authenticating = false
 
     // Palette "terminale"
     private val red = Color.parseColor("#FF3B30")
@@ -121,12 +124,58 @@ class MainActivity : Activity() {
                 // ignora
             }
         }.start()
+        if (Lock.needed(this)) {
+            showLock()
+        } else {
+            showIntro()
+            offerCrashReport()
+        }
+    }
+
+    private fun showLock() {
+        locked = true
+        box.removeAllViews()
+        title(tr("APP_BLOCCATA"))
+        text(tr("Sblocca con il blocco schermo del telefono (PIN, sequenza o impronta)."), color = green)
+        button(tr("[>] Sblocca")) { askUnlock() }
+        askUnlock()
+    }
+
+    private fun askUnlock() {
+        if (authenticating) return
+        val i = Lock.intent(this)
+        if (i == null) {
+            Lock.touch()
+            unlocked()
+            return
+        }
+        authenticating = true
+        try {
+            startActivityForResult(i, 8)
+        } catch (e: Exception) {
+            authenticating = false
+        }
+    }
+
+    private fun unlocked() {
+        locked = false
+        Lock.touch()
         showIntro()
         offerCrashReport()
     }
 
+    override fun onStop() {
+        if (!authenticating && !locked) Lock.touch()
+        super.onStop()
+    }
+
     override fun onResume() {
         super.onResume()
+        if (!locked && Lock.needed(this)) {
+            showLock()
+            return
+        }
+        if (locked) return
         when (screen) {
             "cleanHome" -> showCleanHome()
             "chatHome" -> showChatHome()
@@ -139,6 +188,7 @@ class MainActivity : Activity() {
     override fun onBackPressed() {
         val g = group
         when {
+            locked -> finish()
             screen == "intro" -> super.onBackPressed()
             screen != "group" && g != null -> showGroup(g)
             else -> showIntro()
@@ -172,16 +222,39 @@ class MainActivity : Activity() {
     }
 
     private fun title(s: String) {
-        text("> ${s}_", size = 22f, color = green, bold = true, pad = 4)
+        val t = text("> ${s}_", size = 22f, color = green, bold = true, pad = 4)
+        t.contentDescription = s.replace('_', ' ')
+        t.isAccessibilityHeading = true
         sep()
     }
 
     private fun sep() {
-        text("====================================", size = 12f, color = grey, pad = 1)
+        val t = text("====================================", size = 12f, color = grey, pad = 1)
+        t.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
     }
 
     private fun section(s: String) {
-        text("## $s ##", size = 16f, color = green, bold = true, pad = 12)
+        val t = text("## $s ##", size = 16f, color = green, bold = true, pad = 12)
+        t.contentDescription = s
+        t.isAccessibilityHeading = true
+    }
+
+    /** Testo da leggere con TalkBack: toglie le parentesi decorative e dice lo stato. */
+    private fun speak(label: String): String {
+        var s = label
+        var prefix = ""
+        val m = Regex("^\\[([^\\]]{1,4})\\]\\s*").find(s)
+        if (m != null) {
+            val tag = m.groupValues[1]
+            s = s.substring(m.value.length)
+            prefix = when {
+                tag == "x" && !s.startsWith(tr("Annulla")) -> tr("selezionato") + ", "
+                tag == " " -> tr("non selezionato") + ", "
+                tag == "!" || tag == "!!" || tag == "NO" || tag == "XX" -> tr("attenzione") + ", "
+                else -> ""
+            }
+        }
+        return prefix + s.replace(Regex("\\s*\\n\\s*"), ". ")
     }
 
     private fun buttonBg(): StateListDrawable {
@@ -207,6 +280,8 @@ class MainActivity : Activity() {
         b.gravity = Gravity.START or Gravity.CENTER_VERTICAL
         b.background = buttonBg()
         b.stateListAnimator = null
+        b.minHeight = dp(52)
+        b.contentDescription = speak(label)
         b.setOnClickListener { action() }
         val lp = LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
@@ -258,7 +333,7 @@ class MainActivity : Activity() {
         screen = "intro"
         box.removeAllViews()
         text("> GhostALO_", size = 26f, color = green, bold = true, pad = 4)
-        text(tr("Versione") + " 5.3", size = 12f, color = grey, pad = 1)
+        text(tr("Versione") + " 5.6", size = 12f, color = grey, pad = 1)
         text(tr("Nessun accesso a Internet: i dati restano nel telefono."), size = 12f, color = grey, pad = 1)
         sep()
         if (Watch.isStale(this)) {
@@ -294,6 +369,7 @@ class MainActivity : Activity() {
                 button(tr("Rete Wi-Fi e reti pubbliche")) { showNet() }
                 button(tr("Spazio privato e profili")) { showProfiles() }
                 button(tr("Cookie e tracciamento")) { showCookies() }
+                button(tr("Microfono e fotocamera")) { showMicCam() }
             }
             "clean" -> {
                 title(tr("PULIZIA_E_PRESTAZIONI"))
@@ -946,11 +1022,16 @@ class MainActivity : Activity() {
             } catch (e: Exception) {
                 emptyList()
             }
-            runOnUiThread { if (my == token) showBigReport(res) }
+            val prints = HashMap<java.io.File, String>()
+            for (f in res) {
+                Work.check()
+                Cleaner.fingerprint(f)?.let { prints[f] = it }
+            }
+            runOnUiThread { if (my == token) showBigReport(res, prints) }
         }
     }
 
-    private fun showBigReport(files: List<java.io.File>) {
+    private fun showBigReport(files: List<java.io.File>, prints: Map<java.io.File, String> = emptyMap()) {
         screen = "bigReport"
         box.removeAllViews()
         title(tr("FILE_GRANDI_E_VECCHI"))
@@ -990,7 +1071,7 @@ class MainActivity : Activity() {
                     .setPositiveButton(tr("Elimina")) { _, _ ->
                         val app = applicationContext
                         work {
-                            val r = Cleaner.deleteFiles(app, sel, stamps)
+                            val r = Cleaner.deleteFiles(app, sel, stamps, prints)
                             runOnUiThread {
                                 Toast.makeText(
                                     this,
@@ -1123,6 +1204,13 @@ class MainActivity : Activity() {
         )
         if (!Cleaner.hasAllFiles()) {
             text(tr("[NO] Accesso ai file: non concesso"), color = red, bold = true, pad = 10)
+            val waiting = Trash.pendingCount(this)
+            if (waiting > 0) {
+                text(
+                    trf("Nel cestino ci sono ancora %s elementi, ma senza accesso ai file non posso né mostrarli né ripristinarli. Concedi di nuovo l'accesso: non vengono cancellati.", waiting),
+                    size = 13f, color = orange
+                )
+            }
             allFilesButton()
             backButton()
             return
@@ -1215,6 +1303,11 @@ class MainActivity : Activity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 8) {
+            authenticating = false
+            if (resultCode == RESULT_OK) unlocked()
+            return
+        }
         if (requestCode != 7 || resultCode != RESULT_OK) return
         val uri = data?.data ?: return
         val app = applicationContext
@@ -1283,6 +1376,82 @@ class MainActivity : Activity() {
         }
     }
 
+    // ---------- Microfono e fotocamera ----------
+
+    private fun showMicCam() {
+        token++
+        val my = token
+        screen = "micCam"
+        box.removeAllViews()
+        title(tr("MICROFONO_E_FOTOCAMERA"))
+        text(tr("Controllo le app…"), color = grey)
+        val usage = Cleaner.hasUsageAccess(this)
+        work {
+            val mic = try { MicCam.scan(this, Manifest.permission.RECORD_AUDIO, usage) } catch (e: Exception) { null }
+            val cam = try { MicCam.scan(this, Manifest.permission.CAMERA, usage) } catch (e: Exception) { null }
+            runOnUiThread { if (my == token) fillMicCam(mic, cam, usage) }
+        }
+    }
+
+    private fun micWhen(a: MicApp, usage: Boolean): String {
+        if (!usage) return ""
+        if (a.lastUsed <= 0L) return tr("non aperta negli ultimi 30 giorni")
+        val d = ((System.currentTimeMillis() - a.lastUsed) / MicCam.DAY).toInt()
+        return when {
+            d <= 0 -> tr("aperta oggi")
+            d == 1 -> tr("aperta ieri")
+            else -> trf("aperta %s giorni fa", d)
+        }
+    }
+
+    private fun micSection(name: String, list: List<MicApp>?, usage: Boolean) {
+        section(name)
+        if (list == null) {
+            text(tr("Non sono riuscito a completare il controllo."), color = red)
+            return
+        }
+        if (list.isEmpty()) {
+            text(tr("Nessuna app ha questo permesso."), color = green)
+            return
+        }
+        text(trf("%s app con il permesso attivo.", list.size), size = 12f, color = grey)
+        for (a in list.take(30)) {
+            val idle = usage && !a.system && (a.lastUsed <= 0L || System.currentTimeMillis() - a.lastUsed > 30 * MicCam.DAY)
+            val w = micWhen(a, usage)
+            val mark = if (idle) "[!] " else "[>] "
+            val extra = (if (a.system) tr("(app di sistema)") + " " else "") + w
+            button(mark + a.label + (if (extra.isNotBlank()) "\n     " + extra.trim() else "")) { openApp(a.pkg) }
+        }
+        if (list.size > 30) text(trf("… e altre %s app.", list.size - 30), size = 12f, color = grey)
+    }
+
+    private fun fillMicCam(mic: List<MicApp>?, cam: List<MicApp>?, usage: Boolean) {
+        box.removeAllViews()
+        title(tr("MICROFONO_E_FOTOCAMERA"))
+        text(
+            tr("App che hanno il permesso adesso. Tocca un'app per aprire la sua scheda e togliere il permesso."),
+            size = 12f, color = grey
+        )
+        if (!usage) {
+            text(
+                tr("Senza l'accesso alle statistiche di utilizzo non posso dirti da quanto tempo un'app non viene aperta."),
+                size = 12f, color = orange
+            )
+            button(tr("[>] Concedi accesso statistiche")) { openSettings(Settings.ACTION_USAGE_ACCESS_SETTINGS) }
+        } else {
+            text(tr("[!] = permesso attivo ma app non aperta da oltre 30 giorni: valuta di toglierlo."), size = 12f, color = orange)
+        }
+        micSection(tr("MICROFONO"), mic, usage)
+        micSection(tr("FOTOCAMERA"), cam, usage)
+        section(tr("LIMITI"))
+        text(
+            tr("Android non permette a un'app di sapere quando un'altra registra. L'elenco mostra chi potrebbe farlo, non chi lo fa. La prova concreta è la Dashboard privacy del telefono, che registra gli usi reali, e il puntino verde in alto quando microfono o fotocamera sono accesi."),
+            size = 12f, color = grey
+        )
+        button(tr("[>] Apri le impostazioni Privacy")) { openSettings("android.settings.PRIVACY_SETTINGS") }
+        backButton()
+    }
+
     // ---------- Cookie e tracciamento ----------
 
     private val browsers = listOf(
@@ -1334,6 +1503,7 @@ class MainActivity : Activity() {
         cb.textSize = 13f
         cb.buttonTintList = ColorStateList.valueOf(green)
         cb.isChecked = value
+        cb.minHeight = dp(52)
         cb.setOnCheckedChangeListener { _, v -> onChange(v) }
         box.addView(cb)
     }
@@ -1366,6 +1536,26 @@ class MainActivity : Activity() {
         check(tr("Nuovo permesso sensibile su app già installata"), Watch.toggle(this, "alert_perm")) { Watch.setToggle(this, "alert_perm", it) }
         check(tr("Avvisa anche per ogni nuova app installata da APK"), Watch.alertNewApk(this)) { Watch.setAlertNewApk(this, it) }
         check(tr("Firma di un'app cambiata"), Watch.toggle(this, "alert_sig")) { Watch.setToggle(this, "alert_sig", it) }
+        section(tr("BLOCCO DELL'APP"))
+        if (!Lock.available(this)) {
+            text(tr("Per usare il blocco imposta prima un PIN, una sequenza o un'impronta nelle impostazioni del telefono."), size = 12f, color = orange)
+        } else {
+            check(tr("Chiedi lo sblocco del telefono per aprire l'app"), Lock.enabled(this)) {
+                Lock.setEnabled(this, it)
+                Lock.touch()
+                showSettings()
+            }
+            if (Lock.enabled(this)) {
+                val gm = Lock.graceMin(this)
+                for (m in listOf(1, 5, 15)) {
+                    button((if (m == gm) "[x] " else "[ ] ") + trf("Richiedi dopo %s min fuori dall'app", m)) {
+                        Lock.setGraceMin(this, m)
+                        showSettings()
+                    }
+                }
+                text(tr("All'avvio dell'app lo sblocco viene chiesto sempre."), size = 12f, color = grey)
+            }
+        }
         section(tr("CESTINO"))
         check(tr("Sposta nel cestino invece di eliminare subito"), Trash.enabled(this)) { Trash.setEnabled(this, it) }
         val td = Trash.days(this)

@@ -44,7 +44,7 @@ object Stalker {
     fun isCustom(ctx: Context): Boolean = customFile(ctx).exists()
 
     /** Legge un elenco dal testo di un file: formato ioc.yaml di Echap o formato P:/C: . */
-    private fun parse(text: String): Pair<Set<String>, Set<String>> {
+    fun parse(text: String): Pair<Set<String>, Set<String>> {
         val p = HashSet<String>()
         val c = HashSet<String>()
         var section = ""
