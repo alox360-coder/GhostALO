@@ -6,14 +6,14 @@ Categories:
   - System
 License: GPL-3.0-only
 AuthorName: alox360-coder
-WebSite: https://github.com/alox360-coder/PrivALO-Destroyer
-SourceCode: https://github.com/alox360-coder/PrivALO-Destroyer
-IssueTracker: https://github.com/alox360-coder/PrivALO-Destroyer/issues
+WebSite: https://github.com/alox360-coder/GhostALO
+SourceCode: https://github.com/alox360-coder/GhostALO
+IssueTracker: https://github.com/alox360-coder/GhostALO/issues
 
 AutoName: GhostALO
 
 RepoType: git
-Repo: https://github.com/alox360-coder/PrivALO-Destroyer.git
+Repo: https://github.com/alox360-coder/GhostALO.git
 
 Builds:
   - versionName: '1.0'

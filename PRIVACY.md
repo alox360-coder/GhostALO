@@ -33,7 +33,7 @@ The app is not directed at children and collects no data from anyone.
 - **Clear clipboard** empties the clipboard; the app does not read it.
 
 ### Contact
-Questions or problems: open an issue at https://github.com/alox360-coder/PrivALO-Destroyer/issues. Please do **not** post sensitive personal information or details of a situation of abuse in a public issue.
+Questions or problems: open an issue at https://github.com/alox360-coder/GhostALO/issues. Please do **not** post sensitive personal information or details of a situation of abuse in a public issue.
 
 ## Italiano
 
@@ -66,4 +66,4 @@ L'app non è rivolta ai minori e non raccoglie dati da nessuno.
 - **Svuota appunti** svuota gli appunti; l'app non li legge.
 
 ### Contatti
-Domande o problemi: apri una segnalazione su https://github.com/alox360-coder/PrivALO-Destroyer/issues. **Non** scrivere in una segnalazione pubblica informazioni personali delicate o dettagli di una situazione di abuso.
+Domande o problemi: apri una segnalazione su https://github.com/alox360-coder/GhostALO/issues. **Non** scrivere in una segnalazione pubblica informazioni personali delicate o dettagli di una situazione di abuso.
